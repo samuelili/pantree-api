@@ -150,6 +150,9 @@ func main() {
 	queries = db.New(conn)
 
 	router := gin.Default()
+
+	registerAuth(router)
+
 	router.GET("/ping", ping)
 
 	router.GET("/recipes", getRecipes)

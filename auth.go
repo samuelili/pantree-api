@@ -6,11 +6,15 @@ import (
 	"encoding/hex"
 	"log"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgtype"
+
+	"github.com/google/uuid"
 )
 
 /**
@@ -19,22 +23,7 @@ inspired by https://ieeexplore.ieee.org/abstract/document/10404196
 
 var (
 	identityKey = "id"
-	port        string
 )
-
-// User demo
-type User struct {
-	Email string
-}
-
-func identityHandler() func(c *gin.Context) interface{} {
-	return func(c *gin.Context) interface{} {
-		claims := jwt.ExtractClaims(c)
-		return &User{
-			Email: claims[identityKey].(string),
-		}
-	}
-}
 
 type login struct {
 	Email string `form:"email" json:"email" binding:"required,email"`
@@ -42,7 +31,12 @@ type login struct {
 	Hash  string `form:"hash" json:"hash" binding:"required"`
 }
 
+type JwtUser struct {
+	Id string `form:"id" json:"id" binding:"required"`
+}
+
 func authenticator() func(c *gin.Context) (interface{}, error) {
+
 	return func(c *gin.Context) (interface{}, error) {
 		var loginVals login
 		if err := c.ShouldBind(&loginVals); err != nil {
@@ -52,20 +46,34 @@ func authenticator() func(c *gin.Context) (interface{}, error) {
 		hashStr := loginVals.Hash
 		otp := loginVals.Otp
 
-		expectedHash := hashOtp(email, otp)
-		providedHash, err := hex.DecodeString(hashStr)
+		expectedHash, err := hex.DecodeString(hashStr)
 		if err != nil {
-			// c.JSON(400, gin.H{"message": "Invalid hash format", "error": err.Error()})
 			return nil, jwt.ErrFailedAuthentication
 		}
 
-		if !hmac.Equal(expectedHash, providedHash) {
-			// c.JSON(401, gin.H{"message": "Invalid OTP"})
+		// look through the next 5 timed OTPs
+		match := false
+		for off := 0; off < EXPR_OFF; off++ {
+			testedHash := hashOtp(loginVals.Email, otp, off)
+			if hmac.Equal(testedHash, expectedHash) {
+				match = true
+				break
+			}
+		}
+
+		if !match {
 			return nil, jwt.ErrFailedAuthentication
 		}
 
-		return &User{
-			Email: email,
+		// success!
+		user, err := createOrGetNewUser(c, email)
+
+		if err != nil {
+			return nil, jwt.ErrFailedAuthentication
+		}
+
+		return &JwtUser{
+			Id: user.ID.String(),
 		}, nil
 	}
 }
@@ -73,7 +81,8 @@ func authenticator() func(c *gin.Context) (interface{}, error) {
 func authorizator() func(data interface{}, c *gin.Context) bool {
 	return func(data interface{}, c *gin.Context) bool {
 		// just verify that data is of type *User for now
-		if _, ok := data.(*User); ok {
+		log.Println("asdf", data)
+		if _, ok := data.(*JwtUser); ok {
 			return true
 		}
 		return false
@@ -91,9 +100,9 @@ func unauthorized() func(c *gin.Context, code int, message string) {
 
 func payloadFunc() func(data interface{}) jwt.MapClaims {
 	return func(data interface{}) jwt.MapClaims {
-		if v, ok := data.(*User); ok {
+		if v, ok := data.(*JwtUser); ok {
 			return jwt.MapClaims{
-				identityKey: v.Email,
+				identityKey: v.Id,
 			}
 		}
 		return jwt.MapClaims{}
@@ -110,13 +119,9 @@ func initParams() *jwt.GinJWTMiddleware {
 		IdentityKey: identityKey,
 		PayloadFunc: payloadFunc(),
 
-		IdentityHandler: identityHandler(),
-		Authenticator:   authenticator(),
-		Authorizator:    authorizator(),
-		Unauthorized:    unauthorized(),
-		TokenLookup:     "header: Authorization, query: token, cookie: jwt",
-		// TokenLookup: "query:token",
-		// TokenLookup: "cookie:token",
+		Authenticator: authenticator(),
+		Unauthorized:  unauthorized(),
+		TokenLookup:   "header: Authorization, query: token, cookie: jwt",
 		TokenHeadName: "Bearer",
 		TimeFunc:      time.Now,
 	}
@@ -128,16 +133,6 @@ func handleNoRoute() func(c *gin.Context) {
 		log.Printf("NoRoute claims: %#v\n", claims)
 		c.JSON(404, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
 	}
-}
-
-func helloHandler(c *gin.Context) {
-	claims := jwt.ExtractClaims(c)
-	user, _ := c.Get(identityKey)
-	c.JSON(200, gin.H{
-		"userID":   claims[identityKey],
-		"userName": user.(*User).Email,
-		"text":     "Hello World.",
-	})
 }
 
 var secret string
@@ -164,19 +159,21 @@ func generateOtp() string {
 	return generateRandomString(6, charset)
 }
 
-func generateSecret() string {
-	const charset = "abcdefghijklmnopqrstuvwxyz" +
-		"ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-		"0123456789"
+const TIME_INT int64 = 60 * 1000
+const EXPR_OFF int = 5
 
-	return generateRandomString(32, charset)
+func getTimeStep(offset int) int64 {
+	now := time.Now().UnixMilli()
+	curr := now - now%TIME_INT
+	return curr + int64(offset)*TIME_INT
 }
 
-func hashOtp(email string, otp string) []byte {
+func hashOtp(email string, otp string, offset int) []byte {
 	hash := hmac.New(sha1.New, []byte(secret))
 
 	hash.Write([]byte(email))
 	hash.Write([]byte(otp))
+	hash.Write([]byte{byte(getTimeStep(offset))})
 
 	return hash.Sum(nil)
 }
@@ -198,10 +195,14 @@ func requestOtp(c *gin.Context) {
 	}
 
 	otp := generateOtp()
-	hash := hashOtp(params.Email, otp)
+	hash := hashOtp(params.Email, otp, EXPR_OFF-1)
 	hashStr := getHashString(hash)
 
-	log.Println("REMOVE ME: OTP is ", otp, " for email ", params.Email)
+	if cfg.Server.SendMail {
+		sendEmail(params.Email, "pantree: Your One-Time Password is...", "Your One-Time Password is "+otp+". This will expire in 5 minutes.")
+	} else {
+		log.Println("DEV: OTP is ", otp, " for email ", params.Email)
+	}
 
 	log.Println("OTP Requested, sending hash to user: ", hashStr)
 
@@ -225,22 +226,36 @@ func handlerMiddleware(authMiddleware *jwt.GinJWTMiddleware) gin.HandlerFunc {
 	}
 }
 
-var handler *jwt.GinJWTMiddleware
+func getUserId(c *gin.Context) (uuid.UUID, error) {
+	claims := jwt.ExtractClaims(c)
+	idStr := claims[identityKey].(string)
 
-func registerAuth(engine *gin.Engine) {
-	// TODO: rotate this secret
-	secret = generateSecret()
+	parsedUuid, err := uuid.Parse(idStr)
+
+	if err != nil {
+		return parsedUuid, err
+	}
+
+	return parsedUuid, nil
+}
+
+func getPgtypeUuid(uuid uuid.UUID) pgtype.UUID {
+	return pgtype.UUID{
+		Bytes: uuid,
+		Valid: true,
+	}
+}
+
+func registerAuth(engine *gin.Engine) *jwt.GinJWTMiddleware {
+	secret = os.Getenv("SECRET")
 
 	// register jwt middleware
 	authMiddleware, err := jwt.New(initParams())
 	if err != nil {
 		log.Fatal("JWT Error:" + err.Error())
 	}
-	handler = authMiddleware
 
 	engine.Use(handlerMiddleware(authMiddleware))
-
-	// engine.POST("/login", _login)
 
 	engine.NoRoute(authMiddleware.MiddlewareFunc(), handleNoRoute())
 
@@ -248,5 +263,6 @@ func registerAuth(engine *gin.Engine) {
 	engine.POST("/login", authMiddleware.LoginHandler)
 	auth := engine.Group("/auth", authMiddleware.MiddlewareFunc())
 	auth.GET("/refresh_token", authMiddleware.RefreshHandler)
-	auth.GET("/hello", helloHandler)
+
+	return authMiddleware
 }

@@ -1,0 +1,10 @@
+server:
+  port: 8080
+  sendMail: false
+SECRET: ""
+database:
+  user: ""
+  dbname: ""
+email:
+  from: ""
+  arn: ""

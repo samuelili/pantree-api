@@ -53,6 +53,28 @@ func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Rec
 	return i, err
 }
 
+const createUser = `-- name: CreateUser :one
+INSERT INTO users (
+  email, name
+) VALUES (
+  $1,
+  $2
+)
+RETURNING id, email, name
+`
+
+type CreateUserParams struct {
+	Email string
+	Name  string
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, createUser, arg.Email, arg.Name)
+	var i User
+	err := row.Scan(&i.ID, &i.Email, &i.Name)
+	return i, err
+}
+
 const getRecipe = `-- name: GetRecipe :one
 SELECT id, name, description, steps, ingredients, creatorid FROM recipes
 WHERE id = $1 LIMIT 1
@@ -70,6 +92,24 @@ func (q *Queries) GetRecipe(ctx context.Context, id pgtype.UUID) (Recipe, error)
 		&i.Ingredients,
 		&i.Creatorid,
 	)
+	return i, err
+}
+
+const getUser = `-- name: GetUser :one
+SELECT id, email, name FROM users
+where id = COALESCE($1::uuid, null) or email = COALESCE($2, null)
+`
+
+type GetUserParams struct {
+	ID    pgtype.UUID
+	Email pgtype.Text
+}
+
+// select by either id or email
+func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, getUser, arg.ID, arg.Email)
+	var i User
+	err := row.Scan(&i.ID, &i.Email, &i.Name)
 	return i, err
 }
 
@@ -133,5 +173,25 @@ func (q *Queries) UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) erro
 		arg.Ingredients,
 		arg.ID,
 	)
+	return err
+}
+
+const updateUser = `-- name: UpdateUser :exec
+UPDATE users
+SET
+  email = COALESCE($1, name),
+  name = COALESCE($2, email)
+WHERE id = $3
+RETURNING id, email, name
+`
+
+type UpdateUserParams struct {
+	Name  pgtype.Text
+	Email pgtype.Text
+	ID    pgtype.UUID
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
+	_, err := q.db.Exec(ctx, updateUser, arg.Name, arg.Email, arg.ID)
 	return err
 }

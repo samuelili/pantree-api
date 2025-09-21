@@ -30,3 +30,25 @@ SET
   ingredients = COALESCE(sqlc.narg('ingredients'), ingredients)
 WHERE id = sqlc.arg('id')
 RETURNING *;
+
+-- name: CreateUser :one
+INSERT INTO users (
+  email, name
+) VALUES (
+  $1,
+  $2
+)
+RETURNING *;
+
+-- name: UpdateUser :exec
+UPDATE users
+SET
+  email = COALESCE(sqlc.narg('name'), name),
+  name = COALESCE(sqlc.narg('email'), email)
+WHERE id = sqlc.arg('id')
+RETURNING *;
+
+-- select by either id or email
+-- name: GetUser :one
+SELECT * FROM users
+where id = COALESCE(sqlc.narg('id')::uuid, null) or email = COALESCE(sqlc.narg('email'), null);

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
@@ -136,10 +137,19 @@ func updateRecipe(c *gin.Context) {
 }
 
 func main() {
+	// read config
+	readConfig()
+
 	// db startup
 	ctx = context.Background()
 
-	_conn, err := pgx.Connect(ctx, "user=samuel dbname=samuel sslmode=verify-full")
+	err := loadAws(&ctx)
+	if err != nil {
+		log.Fatal("Error loading AWS", err)
+		os.Exit(1)
+	}
+
+	_conn, err := pgx.Connect(ctx, fmt.Sprintf("user=%s dbname=%s sslmode=verify-full", cfg.Database.User, cfg.Database.DBName))
 	conn = _conn
 	if err != nil {
 		log.Fatal("Error connecting to the database: ", err)
@@ -151,13 +161,18 @@ func main() {
 
 	router := gin.Default()
 
-	registerAuth(router)
+	middleware := registerAuth(router)
 
 	router.GET("/ping", ping)
 
-	router.GET("/recipes", getRecipes)
-	router.POST("/recipes/create", createRecipe)
-	router.PUT("/recipes/update", updateRecipe)
+	api := router.Group("/api", middleware.MiddlewareFunc())
+
+	api.GET("/recipes", getRecipes)
+	api.POST("/recipes/create", createRecipe)
+	api.PUT("/recipes/update", updateRecipe)
+
+	users := api.Group("/users")
+	registerUserRoutes(users)
 
 	router.Run("localhost:8080")
 }

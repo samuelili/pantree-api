@@ -120,5 +120,5 @@ func main() {
 	users := api.Group("/users")
 	registerUserRoutes(users)
 
-	router.Run(fmt.Sprintf("%s:8080", cfg.Server.Broadcast))
+	router.Run(fmt.Sprintf("%s:%s", cfg.Server.Broadcast, cfg.Server.Port))
 }

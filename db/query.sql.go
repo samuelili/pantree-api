@@ -179,19 +179,19 @@ func (q *Queries) UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) erro
 const updateUser = `-- name: UpdateUser :exec
 UPDATE users
 SET
-  email = COALESCE($1, name),
-  name = COALESCE($2, email)
+  email = COALESCE($1, email),
+  name = COALESCE($2, name)
 WHERE id = $3
 RETURNING id, email, name
 `
 
 type UpdateUserParams struct {
-	Name  pgtype.Text
 	Email pgtype.Text
+	Name  pgtype.Text
 	ID    pgtype.UUID
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
-	_, err := q.db.Exec(ctx, updateUser, arg.Name, arg.Email, arg.ID)
+	_, err := q.db.Exec(ctx, updateUser, arg.Email, arg.Name, arg.ID)
 	return err
 }

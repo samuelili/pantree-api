@@ -43,8 +43,8 @@ RETURNING *;
 -- name: UpdateUser :exec
 UPDATE users
 SET
-  email = COALESCE(sqlc.narg('name'), name),
-  name = COALESCE(sqlc.narg('email'), email)
+  email = COALESCE(sqlc.narg('email'), email),
+  name = COALESCE(sqlc.narg('name'), name)
 WHERE id = sqlc.arg('id')
 RETURNING *;
 

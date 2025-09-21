@@ -24,9 +24,9 @@ func sendError(c *gin.Context, errorCode int, err error, message string) {
 	c.IndentedJSON(errorCode, gin.H{"message": message, "error": err.Error()})
 }
 
-func ping(c *gin.Context) {
+func bing(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"message": "pong",
+		"message": "bong",
 	})
 }
 
@@ -109,7 +109,7 @@ func main() {
 
 	middleware := registerAuth(router)
 
-	router.GET("/ping", ping)
+	router.GET("/bing", bing)
 
 	api := router.Group("/api", middleware.MiddlewareFunc())
 

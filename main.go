@@ -19,60 +19,6 @@ var ctx context.Context
 var conn *pgx.Conn
 var queries *db.Queries
 
-// func run() error {
-// 	ctx := context.Background()
-
-// 	conn, err := pgx.Connect(ctx, "user=samuel dbname=samuel sslmode=verify-full")
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer conn.Close(ctx)
-
-// 	queries := db.New(conn)
-
-// 	// list all authors
-// 	authors, err := queries.ListAuthors(ctx)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	log.Println(authors)
-
-// 	// create an author
-// 	insertedAuthor, err := queries.CreateAuthor(ctx, db.CreateAuthorParams{
-// 		Name: "Brian Kernighan",
-// 		Bio:  pgtype.Text{String: "Co-author of The C Programming Language and The Go Programming Language", Valid: true},
-// 	})
-// 	if err != nil {
-// 		return err
-// 	}
-// 	log.Println(insertedAuthor)
-
-// 	// get the author we just inserted
-// 	fetchedAuthor, err := queries.GetAuthor(ctx, insertedAuthor.ID)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	// prints true
-// 	log.Println(reflect.DeepEqual(insertedAuthor, fetchedAuthor))
-// 	return nil
-// }
-
-// postAlbums adds an album from JSON received in the request body.
-// func postAlbums(c *gin.Context) {
-//     // var newAlbum album
-
-//     // // Call BindJSON to bind the received JSON to
-//     // // newAlbum.
-//     // if err := c.BindJSON(&newAlbum); err != nil {
-//     //     return
-//     // }
-
-//     // // Add the new album to the slice.
-//     // albums = append(albums, newAlbum)
-//     // c.IndentedJSON(http.StatusCreated, newAlbum)
-// }
-
 func sendError(c *gin.Context, errorCode int, err error, message string) {
 	log.Println(message, ": ", err)
 	c.IndentedJSON(errorCode, gin.H{"message": message, "error": err.Error()})

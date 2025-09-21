@@ -16,7 +16,7 @@ type Config struct {
 	// Server holds settings related to the HTTP server.
 	Server struct {
 		Broadcast string `yaml:"broadcast"`
-		Port      int    `yaml:"port"`
+		Port      string `yaml:"port"`
 		SendMail  bool   `yaml:"sendMail"`
 	} `yaml:"server"`
 

@@ -1,4 +1,5 @@
 server:
+  broadcast: "localhost"
   port: 8080
   sendMail: false
 SECRET: ""

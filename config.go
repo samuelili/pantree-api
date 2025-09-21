@@ -21,8 +21,9 @@ type Config struct {
 
 	// Database holds connection details for the database.
 	Database struct {
-		User   string `yaml:"user"`
-		DBName string `yaml:"dbname"`
+		User     string `yaml:"user"`
+		DBName   string `yaml:"dbname"`
+		Password string `yaml:"password"`
 	} `yaml:"database"`
 
 	// Email holds configuration for the email service.

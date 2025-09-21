@@ -149,7 +149,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	_conn, err := pgx.Connect(ctx, fmt.Sprintf("user=%s dbname=%s sslmode=verify-full", cfg.Database.User, cfg.Database.DBName))
+	_conn, err := pgx.Connect(ctx, fmt.Sprintf("user=%s password=%s dbname=%s sslmode=verify-full", cfg.Database.User, cfg.Database.Password, cfg.Database.DBName))
 	conn = _conn
 	if err != nil {
 		log.Fatal("Error connecting to the database: ", err)

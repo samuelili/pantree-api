@@ -27,7 +27,7 @@ var (
 
 type login struct {
 	Email string `form:"email" json:"email" binding:"required,email"`
-	Otp   string `form:"otp" json:"otp" binding:"required,len=6"`
+	Otp   string `form:"otp" json:"otp" binding:"required,len=5"`
 	Hash  string `form:"hash" json:"hash" binding:"required"`
 }
 
@@ -156,7 +156,7 @@ func generateRandomString(length int, charset string) string {
 
 func generateOtp() string {
 	const charset = "0123456789"
-	return generateRandomString(6, charset)
+	return generateRandomString(5, charset)
 }
 
 const TIME_INT int64 = 60 * 1000
@@ -213,7 +213,7 @@ func requestOtp(c *gin.Context) {
 
 type LoginParams struct {
 	Email string `json:"email" binding:"required,email"`
-	Otp   string `json:"otp" binding:"required,len=6"`
+	Otp   string `json:"otp" binding:"required,len=5"`
 	Hash  string `json:"hash" binding:"required"`
 }
 

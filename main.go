@@ -48,6 +48,7 @@ func getRecipes(c *gin.Context) {
 }
 
 func createRecipe(c *gin.Context) {
+	// create new recipe from recipe parameters
 	var newRecipe db.CreateRecipeParams
 
 	if err := c.BindJSON(&newRecipe); err != nil {
@@ -55,13 +56,16 @@ func createRecipe(c *gin.Context) {
 		return
 	}
 
+	// insert recipe into db
 	createdRecipe, err := queries.CreateRecipe(ctx, newRecipe)
 
+	// if unable to insert into db, throw error
 	if err != nil {
 		sendError(c, http.StatusInternalServerError, err, "Could not create recipe")
 		return
 	}
 
+	// return record creation status
 	c.IndentedJSON(http.StatusCreated, createdRecipe)
 }
 
@@ -77,6 +81,7 @@ func updateRecipe(c *gin.Context) {
 
 	if err != nil {
 		sendError(c, http.StatusInternalServerError, err, "Could not update recipe")
+		return
 	}
 
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "Recipe updated successfully"})
@@ -94,8 +99,9 @@ func main() {
 		log.Fatal("Error loading AWS", err)
 		os.Exit(1)
 	}
-
-	_conn, err := pgx.Connect(ctx, fmt.Sprintf("user=%s password=%s dbname=%s sslmode=verify-full", cfg.Database.User, cfg.Database.Password, cfg.Database.DBName))
+	
+	// sslmode disable for testing
+	_conn, err := pgx.Connect(ctx, fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", cfg.Database.User, cfg.Database.Password, cfg.Database.DBName))
 	conn = _conn
 	if err != nil {
 		log.Fatal("Error connecting to the database: ", err)

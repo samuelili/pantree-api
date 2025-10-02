@@ -1,0 +1,12 @@
+server:
+  broadcast: ""
+  port: ""
+  sendMail: false
+SECRET: ""
+database:
+  user: ""
+  dbname: ""
+  password: ""
+email:
+  from: ""
+  arn: ""

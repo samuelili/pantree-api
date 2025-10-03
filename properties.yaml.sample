@@ -1,6 +1,6 @@
 server:
-  broadcast: "localhost"
-  port: "8080"
+  broadcast: ""
+  port: ""
   sendMail: false
 SECRET: ""
 database:

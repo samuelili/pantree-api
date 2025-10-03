@@ -77,6 +77,7 @@ func updateRecipe(c *gin.Context) {
 
 	if err != nil {
 		sendError(c, http.StatusInternalServerError, err, "Could not update recipe")
+		return
 	}
 
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "Recipe updated successfully"})
@@ -94,7 +95,7 @@ func main() {
 		log.Fatal("Error loading AWS", err)
 		os.Exit(1)
 	}
-
+	
 	_conn, err := pgx.Connect(ctx, fmt.Sprintf("user=%s password=%s dbname=%s sslmode=verify-full", cfg.Database.User, cfg.Database.Password, cfg.Database.DBName))
 	conn = _conn
 	if err != nil {

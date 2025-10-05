@@ -5,31 +5,227 @@
 package db
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type PantryItem struct {
-	ID           pgtype.UUID
-	Name         string
-	Quantity     pgtype.Numeric
-	Unit         string
-	Price        pgtype.Numeric
-	ExpirationMs pgtype.Int8
-	Category     string
-	Userid       pgtype.UUID
+type GrocType string
+
+const (
+	GrocTypeMeatSeafood GrocType = "meat/seafood"
+	GrocTypeProduce     GrocType = "produce"
+	GrocTypeDairyEggs   GrocType = "dairy/eggs"
+	GrocTypePrepared    GrocType = "prepared"
+	GrocTypeEssentials  GrocType = "essentials"
+	GrocTypeBakery      GrocType = "bakery"
+	GrocTypeSnacks      GrocType = "snacks"
+	GrocTypeFrozen      GrocType = "frozen"
+	GrocTypeBeverages   GrocType = "beverages"
+	GrocTypeDesserts    GrocType = "desserts"
+	GrocTypeAlcohol     GrocType = "alcohol"
+)
+
+func (e *GrocType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = GrocType(s)
+	case string:
+		*e = GrocType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for GrocType: %T", src)
+	}
+	return nil
+}
+
+type NullGrocType struct {
+	GrocType GrocType
+	Valid    bool // Valid is true if GrocType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullGrocType) Scan(value interface{}) error {
+	if value == nil {
+		ns.GrocType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.GrocType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullGrocType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.GrocType), nil
+}
+
+type LocType string
+
+const (
+	LocTypePantry  LocType = "pantry"
+	LocTypeFridge  LocType = "fridge"
+	LocTypeFreezer LocType = "freezer"
+)
+
+func (e *LocType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = LocType(s)
+	case string:
+		*e = LocType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for LocType: %T", src)
+	}
+	return nil
+}
+
+type NullLocType struct {
+	LocType LocType
+	Valid   bool // Valid is true if LocType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullLocType) Scan(value interface{}) error {
+	if value == nil {
+		ns.LocType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.LocType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullLocType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.LocType), nil
+}
+
+type MeasureType string
+
+const (
+	MeasureTypeMetric   MeasureType = "metric"
+	MeasureTypeImperial MeasureType = "imperial"
+)
+
+func (e *MeasureType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = MeasureType(s)
+	case string:
+		*e = MeasureType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for MeasureType: %T", src)
+	}
+	return nil
+}
+
+type NullMeasureType struct {
+	MeasureType MeasureType
+	Valid       bool // Valid is true if MeasureType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullMeasureType) Scan(value interface{}) error {
+	if value == nil {
+		ns.MeasureType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.MeasureType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullMeasureType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.MeasureType), nil
+}
+
+type UnitType string
+
+const (
+	UnitTypeCountQtr UnitType = "count_qtr"
+	UnitTypeVolumeMl UnitType = "volume_ml"
+	UnitTypeMassG    UnitType = "mass_g"
+)
+
+func (e *UnitType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = UnitType(s)
+	case string:
+		*e = UnitType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for UnitType: %T", src)
+	}
+	return nil
+}
+
+type NullUnitType struct {
+	UnitType UnitType
+	Valid    bool // Valid is true if UnitType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullUnitType) Scan(value interface{}) error {
+	if value == nil {
+		ns.UnitType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.UnitType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullUnitType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.UnitType), nil
+}
+
+type Ingredient struct {
+	ID             pgtype.UUID
+	Name           string
+	Unit           UnitType
+	StorageLoc     LocType
+	IngredientType GrocType
 }
 
 type Recipe struct {
 	ID          pgtype.UUID
+	CreatorID   pgtype.UUID
+	DateCreated pgtype.Date
 	Name        string
 	Description pgtype.Text
 	Steps       []string
-	Ingredients []string
-	Creatorid   pgtype.UUID
+}
+
+type Recipeingredient struct {
+	RecipeID     pgtype.UUID
+	IngredientID pgtype.UUID
+	Quantity     pgtype.Numeric
 }
 
 type User struct {
-	ID    pgtype.UUID
-	Email string
-	Name  string
+	ID          pgtype.UUID
+	Email       string
+	Name        string
+	DateJoined  pgtype.Date
+	PrefMeasure MeasureType
+}
+
+type Useritem struct {
+	ID             pgtype.UUID
+	UserID         pgtype.UUID
+	IngredientID   pgtype.UUID
+	Quantity       pgtype.Numeric
+	Price          pgtype.Numeric
+	ExpirationDate pgtype.Date
 }

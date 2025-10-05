@@ -12,92 +12,155 @@ import (
 )
 
 const createRecipe = `-- name: CreateRecipe :one
-INSERT INTO recipes (
-  name, description, steps, ingredients, creatorId
+INSERT INTO Recipes (
+  creator_id, date_created, name, description, steps    
 ) VALUES (
-  $1, $2, $3, $4, $5
+  $1, 
+  CURRENT_DATE, 
+  $2, 
+  $3, 
+  $4
 )
-RETURNING id, name, description, steps, ingredients, creatorid
+RETURNING id, creator_id, date_created, name, description, steps
 `
 
 type CreateRecipeParams struct {
+	CreatorID   pgtype.UUID
 	Name        string
 	Description pgtype.Text
 	Steps       []string
-	Ingredients []string
-	Creatorid   pgtype.UUID
 }
 
-// $1: name
-// $2: description
-// $3: steps
-// $4: ingredients
-// $5: creatorId
+// date created is current date
 func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Recipe, error) {
 	row := q.db.QueryRow(ctx, createRecipe,
+		arg.CreatorID,
 		arg.Name,
 		arg.Description,
 		arg.Steps,
-		arg.Ingredients,
-		arg.Creatorid,
 	)
 	var i Recipe
 	err := row.Scan(
 		&i.ID,
+		&i.CreatorID,
+		&i.DateCreated,
 		&i.Name,
 		&i.Description,
 		&i.Steps,
-		&i.Ingredients,
-		&i.Creatorid,
 	)
 	return i, err
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (
-  email, name
+INSERT INTO Users (
+  email, name, date_joined, pref_measure
 ) VALUES (
   $1,
-  $2
+  $2,
+  CURRENT_DATE,
+  $3
 )
-RETURNING id, email, name
+RETURNING id, email, name, date_joined, pref_measure
 `
 
 type CreateUserParams struct {
-	Email string
-	Name  string
+	Email       string
+	Name        string
+	PrefMeasure MeasureType
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, createUser, arg.Email, arg.Name)
+	row := q.db.QueryRow(ctx, createUser, arg.Email, arg.Name, arg.PrefMeasure)
 	var i User
-	err := row.Scan(&i.ID, &i.Email, &i.Name)
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Name,
+		&i.DateJoined,
+		&i.PrefMeasure,
+	)
 	return i, err
 }
 
 const getRecipe = `-- name: GetRecipe :one
-SELECT id, name, description, steps, ingredients, creatorid FROM recipes
+SELECT id, creator_id, date_created, name, description, steps FROM Recipes
 WHERE id = $1 LIMIT 1
 `
 
-// $1: recipeId
 func (q *Queries) GetRecipe(ctx context.Context, id pgtype.UUID) (Recipe, error) {
 	row := q.db.QueryRow(ctx, getRecipe, id)
 	var i Recipe
 	err := row.Scan(
 		&i.ID,
+		&i.CreatorID,
+		&i.DateCreated,
 		&i.Name,
 		&i.Description,
 		&i.Steps,
-		&i.Ingredients,
-		&i.Creatorid,
 	)
 	return i, err
 }
 
+const getRecipeIngredients = `-- name: GetRecipeIngredients :many
+SELECT 
+  i.name, 
+  i.unit, 
+  i.storage_loc, 
+  i.ingredient_type,
+  r.quantity
+FROM
+  RecipeIngredients r
+JOIN
+  Ingredients i
+ON
+  r.ingredient_id = i.id
+WHERE
+  recipe_id = $1
+`
+
+type GetRecipeIngredientsRow struct {
+	Name           string
+	Unit           UnitType
+	StorageLoc     LocType
+	IngredientType GrocType
+	Quantity       pgtype.Numeric
+}
+
+// $1: recipe_id
+func (q *Queries) GetRecipeIngredients(ctx context.Context, recipeID pgtype.UUID) ([]GetRecipeIngredientsRow, error) {
+	rows, err := q.db.Query(ctx, getRecipeIngredients, recipeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRecipeIngredientsRow
+	for rows.Next() {
+		var i GetRecipeIngredientsRow
+		if err := rows.Scan(
+			&i.Name,
+			&i.Unit,
+			&i.StorageLoc,
+			&i.IngredientType,
+			&i.Quantity,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUser = `-- name: GetUser :one
-SELECT id, email, name FROM users
-where id = COALESCE($1::uuid, null) or email = COALESCE($2, null)
+SELECT 
+  id, email, name, date_joined, pref_measure 
+FROM 
+  Users
+WHERE
+  ($1::uuid IS NOT NULL AND u.id = $1::uuid) 
+  OR ($2::text IS NOT NULL AND u.email = $2::text)
 `
 
 type GetUserParams struct {
@@ -109,15 +172,89 @@ type GetUserParams struct {
 func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, getUser, arg.ID, arg.Email)
 	var i User
-	err := row.Scan(&i.ID, &i.Email, &i.Name)
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Name,
+		&i.DateJoined,
+		&i.PrefMeasure,
+	)
 	return i, err
 }
 
-const listRecipes = `-- name: ListRecipes :many
-SELECT id, name, description, steps, ingredients, creatorid FROM recipes
+const getUserPantry = `-- name: GetUserPantry :many
+SELECT
+  -- names, quantities, exp date, unit, storage location, ingredient type
+  u.pref_measure AS user_measurement_system,
+  i.name AS ingredient_name,
+  ui.quantity,
+  ui.expiration_date,
+  i.unit,
+  i.storage_loc,
+  i.ingredient_type
+FROM
+  Users u
+JOIN
+  UserItems ui
+ON
+  u.id = ui.user_id
+JOIN
+  Ingredients i
+ON
+  ui.ingredient_id = i.id
+WHERE
+  ($1::uuid IS NOT NULL AND id = $1::uuid) 
+  OR ($2::text IS NOT NULL AND email = $2::text)
 `
 
-// $1: userId
+type GetUserPantryParams struct {
+	UserID pgtype.UUID
+	Email  pgtype.Text
+}
+
+type GetUserPantryRow struct {
+	UserMeasurementSystem MeasureType
+	IngredientName        string
+	Quantity              pgtype.Numeric
+	ExpirationDate        pgtype.Date
+	Unit                  UnitType
+	StorageLoc            LocType
+	IngredientType        GrocType
+}
+
+// select by either id or email
+func (q *Queries) GetUserPantry(ctx context.Context, arg GetUserPantryParams) ([]GetUserPantryRow, error) {
+	rows, err := q.db.Query(ctx, getUserPantry, arg.UserID, arg.Email)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUserPantryRow
+	for rows.Next() {
+		var i GetUserPantryRow
+		if err := rows.Scan(
+			&i.UserMeasurementSystem,
+			&i.IngredientName,
+			&i.Quantity,
+			&i.ExpirationDate,
+			&i.Unit,
+			&i.StorageLoc,
+			&i.IngredientType,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRecipes = `-- name: ListRecipes :many
+SELECT id, creator_id, date_created, name, description, steps FROM Recipes
+`
+
 func (q *Queries) ListRecipes(ctx context.Context) ([]Recipe, error) {
 	rows, err := q.db.Query(ctx, listRecipes)
 	if err != nil {
@@ -129,11 +266,11 @@ func (q *Queries) ListRecipes(ctx context.Context) ([]Recipe, error) {
 		var i Recipe
 		if err := rows.Scan(
 			&i.ID,
+			&i.CreatorID,
+			&i.DateCreated,
 			&i.Name,
 			&i.Description,
 			&i.Steps,
-			&i.Ingredients,
-			&i.Creatorid,
 		); err != nil {
 			return nil, err
 		}
@@ -146,52 +283,67 @@ func (q *Queries) ListRecipes(ctx context.Context) ([]Recipe, error) {
 }
 
 const updateRecipe = `-- name: UpdateRecipe :exec
-UPDATE recipes
+UPDATE Recipes
 SET
-  name = COALESCE($1, name),
-  description = COALESCE($2, description),
-  steps = COALESCE($3, steps),
-  ingredients = COALESCE($4, ingredients)
-WHERE id = $5
-RETURNING id, name, description, steps, ingredients, creatorid
+  creator_id = COALESCE($1, creator_id),
+  date_created = COALESCE($2, date_created),
+  name = COALESCE($3, name),
+  description = COALESCE($4, description),
+  steps = COALESCE($5, steps)
+WHERE 
+  id = $6
+RETURNING id, creator_id, date_created, name, description, steps
 `
 
 type UpdateRecipeParams struct {
+	CreatorID   pgtype.UUID
+	DateCreated pgtype.Date
 	Name        pgtype.Text
 	Description pgtype.Text
 	Steps       []string
-	Ingredients []string
 	ID          pgtype.UUID
 }
 
 // all fields are optional except for id
 func (q *Queries) UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) error {
 	_, err := q.db.Exec(ctx, updateRecipe,
+		arg.CreatorID,
+		arg.DateCreated,
 		arg.Name,
 		arg.Description,
 		arg.Steps,
-		arg.Ingredients,
 		arg.ID,
 	)
 	return err
 }
 
 const updateUser = `-- name: UpdateUser :exec
-UPDATE users
+UPDATE Users
 SET
   email = COALESCE($1, email),
-  name = COALESCE($2, name)
-WHERE id = $3
-RETURNING id, email, name
+  name = COALESCE($2, name),
+  date_joined = COALESCE($3, date_joined),
+  pref_measure = COALESCE($4, pref_measure)
+WHERE 
+  id = $5
+RETURNING id, email, name, date_joined, pref_measure
 `
 
 type UpdateUserParams struct {
-	Email pgtype.Text
-	Name  pgtype.Text
-	ID    pgtype.UUID
+	Email       pgtype.Text
+	Name        pgtype.Text
+	DateJoined  pgtype.Date
+	PrefMeasure NullMeasureType
+	ID          pgtype.UUID
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
-	_, err := q.db.Exec(ctx, updateUser, arg.Email, arg.Name, arg.ID)
+	_, err := q.db.Exec(ctx, updateUser,
+		arg.Email,
+		arg.Name,
+		arg.DateJoined,
+		arg.PrefMeasure,
+		arg.ID,
+	)
 	return err
 }

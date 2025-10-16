@@ -8,13 +8,19 @@ SELECT * FROM Recipes;
 -- date created is current date
 -- name: CreateRecipe :one
 INSERT INTO Recipes (
-  creator_id, date_created, name, description, steps    
+  creator_id, date_created, name, description, steps, 
+  allergens, cooking_time, serving_size, favorite, image_path  
 ) VALUES (
   sqlc.arg('creator_id'), 
   CURRENT_DATE, 
   sqlc.arg('name'), 
   sqlc.arg('description'), 
-  sqlc.arg('steps')
+  sqlc.arg('steps'),
+  sqlc.narg('allergens'),
+  sqlc.arg('cooking_time'),
+  sqlc.arg('serving_size'),
+  sqlc.arg('favorite'),
+  sqlc.narg('image_path')
 )
 RETURNING *;
 
@@ -26,25 +32,39 @@ SET
   date_created = COALESCE(sqlc.narg('date_created'), date_created),
   name = COALESCE(sqlc.narg('name'), name),
   description = COALESCE(sqlc.narg('description'), description),
-  steps = COALESCE(sqlc.narg('steps'), steps)
+  steps = COALESCE(sqlc.narg('steps'), steps),
+  allergens = COALESCE(sqlc.narg('allergens'), allergens),
+  cooking_time = COALESCE(sqlc.narg('cooking_time'), cooking_time),
+  serving_size = COALESCE(sqlc.narg('serving_size'), serving_size),
+  favorite = COALESCE(sqlc.narg('favorite'), favorite),
+  image_path = COALESCE(sqlc.narg('image_path'), image_path)
 WHERE 
   id = sqlc.arg('id')
+RETURNING *;
+
+-- name: CreateRecipeIngredient :one
+INSERT INTO RecipeIngredients (
+  recipe_id, ingredient_id, quantity, author_unit_type, author_measure_type
+) VALUES (
+  sqlc.arg('recipe_id'),
+  sqlc.arg('ingredient_id'),
+  sqlc.arg('quantity'),
+  sqlc.arg('author_unit_type'),
+  sqlc.arg('author_measure_type')
+)
 RETURNING *;
 
 -- $1: recipe_id
 -- name: GetRecipeIngredients :many
 SELECT 
-  i.name, 
-  i.unit, 
-  i.storage_loc, 
-  i.ingredient_type,
-  r.quantity
+  name, 
+  unit, 
+  storage_loc, 
+  ingredient_type,
+  quantity,
+  recipe_id
 FROM
-  RecipeIngredients r
-JOIN
-  Ingredients i
-ON
-  r.ingredient_id = i.id
+  RecipeIngredientsView
 WHERE
   recipe_id = sqlc.arg('recipe_id');
 
@@ -83,24 +103,15 @@ WHERE
 -- select by either id or email
 -- name: GetUserPantry :many
 SELECT
-  -- names, quantities, exp date, unit, storage location, ingredient type
-  u.pref_measure AS user_measurement_system,
-  i.name AS ingredient_name,
-  ui.quantity,
-  ui.expiration_date,
-  i.unit,
-  i.storage_loc,
-  i.ingredient_type
+  user_measurement_system,
+  ingredient_name,
+  quantity,
+  expiration_date,
+  unit, 
+  storage_loc,
+  ingredient_type
 FROM
-  Users u
-JOIN
-  UserItems ui
-ON
-  u.id = ui.user_id
-JOIN
-  Ingredients i
-ON
-  ui.ingredient_id = i.id
+  UserPantryView
 WHERE
   (sqlc.narg('user_id')::uuid IS NOT NULL AND id = sqlc.narg('user_id')::uuid) 
   OR (sqlc.narg('email')::text IS NOT NULL AND email = sqlc.narg('email')::text);

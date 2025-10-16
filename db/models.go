@@ -196,6 +196,7 @@ type Ingredient struct {
 	Unit           UnitType
 	StorageLoc     LocType
 	IngredientType GrocType
+	ImagePath      pgtype.Text
 }
 
 type Recipe struct {
@@ -205,12 +206,28 @@ type Recipe struct {
 	Name        string
 	Description pgtype.Text
 	Steps       []string
+	Allergens   pgtype.Text
+	CookingTime pgtype.Numeric
+	ServingSize pgtype.Numeric
+	Favorite    bool
+	ImagePath   pgtype.Text
 }
 
 type Recipeingredient struct {
-	RecipeID     pgtype.UUID
-	IngredientID pgtype.UUID
-	Quantity     pgtype.Numeric
+	RecipeID          pgtype.UUID
+	IngredientID      pgtype.UUID
+	Quantity          pgtype.Numeric
+	AuthorUnitType    UnitType
+	AuthorMeasureType MeasureType
+}
+
+type Recipeingredientsview struct {
+	Name           string
+	Unit           UnitType
+	StorageLoc     LocType
+	IngredientType GrocType
+	Quantity       pgtype.Numeric
+	RecipeID       pgtype.UUID
 }
 
 type User struct {
@@ -228,4 +245,14 @@ type Useritem struct {
 	Quantity       pgtype.Numeric
 	Price          pgtype.Numeric
 	ExpirationDate pgtype.Date
+}
+
+type Userpantryview struct {
+	UserMeasurementSystem MeasureType
+	IngredientName        string
+	Quantity              pgtype.Numeric
+	ExpirationDate        pgtype.Date
+	Unit                  UnitType
+	StorageLoc            LocType
+	IngredientType        GrocType
 }

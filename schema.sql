@@ -20,7 +20,7 @@ CREATE TABLE Users (
   email          TEXT UNIQUE NOT NULL,
   name           TEXT NOT NULL,
   date_joined    DATE NOT NULL,
-  pref_measure   MEASURE_TYPE NOT NULL
+  pref_measure   MEASURE_TYPE NOT NULL DEFAULT 'metric'
 );
 
 CREATE TABLE Recipes (
@@ -29,14 +29,21 @@ CREATE TABLE Recipes (
   date_created DATE NOT NULL,
   name         TEXT NOT NULL,
   description  TEXT,
-  steps        TEXT[] NOT NULL
+  steps        TEXT[] NOT NULL,
+  allergens    TEXT,
+  cooking_time NUMERIC NOT NULL,
+  serving_size NUMERIC NOT NULL,
+  favorite     BOOLEAN NOT NULL,
+  image_path   TEXT
 );
 
 -- recipe -> ingredients link table
 CREATE TABLE RecipeIngredients (
-  recipe_id       UUID REFERENCES Recipes(id),
-  ingredient_id   UUID REFERENCES Ingredients(id),
-  quantity        NUMERIC NOT NULL,
+  recipe_id           UUID REFERENCES Recipes(id) ON DELETE CASCADE,
+  ingredient_id       UUID REFERENCES Ingredients(id) ON DELETE CASCADE,
+  quantity            NUMERIC NOT NULL,
+  author_unit_type    UNIT_TYPE NOT NULL,
+  author_measure_type MEASURE_TYPE NOT NULL,
   PRIMARY KEY (recipe_id, ingredient_id)
 );
 
@@ -46,7 +53,8 @@ CREATE TABLE Ingredients (
   name             TEXT NOT NULL,
   unit             UNIT_TYPE NOT NULL,
   storage_loc      LOC_TYPE NOT NULL,
-  ingredient_type  GROC_TYPE NOT NULL
+  ingredient_type  GROC_TYPE NOT NULL,
+  image_path       TEXT
 );
 
 -- user inventories
@@ -58,3 +66,40 @@ CREATE TABLE UserItems (
   price            NUMERIC(1000, 2) CHECK (price > 0),
   expiration_date  DATE
 );
+
+-- recipe ingredients view
+CREATE VIEW RecipeIngredientsView AS 
+SELECT 
+  i.name, 
+  i.unit, 
+  i.storage_loc, 
+  i.ingredient_type,
+  r.quantity,
+  r.recipe_id
+FROM
+  RecipeIngredients r
+JOIN
+  Ingredients i
+ON
+  r.ingredient_id = i.id;
+
+-- user pantry view
+CREATE VIEW UserPantryView AS 
+SELECT
+  u.pref_measure AS user_measurement_system,
+  i.name AS ingredient_name,
+  ui.quantity,
+  ui.expiration_date,
+  i.unit,
+  i.storage_loc,
+  i.ingredient_type
+FROM
+  Users u
+JOIN
+  UserItems ui
+ON
+  u.id = ui.user_id
+JOIN
+  Ingredients i
+ON
+  ui.ingredient_id = i.id;

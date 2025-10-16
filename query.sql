@@ -95,7 +95,7 @@ RETURNING *;
 SELECT 
   * 
 FROM 
-  Users
+  Users u
 WHERE
   (sqlc.narg('id')::uuid IS NOT NULL AND u.id = sqlc.narg('id')::uuid) 
   OR (sqlc.narg('email')::text IS NOT NULL AND u.email = sqlc.narg('email')::text);

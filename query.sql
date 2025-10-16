@@ -85,7 +85,7 @@ SET
   email = COALESCE(sqlc.narg('email'), email),
   name = COALESCE(sqlc.narg('name'), name),
   date_joined = COALESCE(sqlc.narg('date_joined'), date_joined),
-  pref_measure = COALESCE(sqlc.narg('pref_measure'), pref_measure)
+  pref_measure = COALESCE(sqlc.narg('pref_measure')::measure_type, pref_measure)
 WHERE 
   id = sqlc.arg('id')
 RETURNING *;

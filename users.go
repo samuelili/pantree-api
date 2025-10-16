@@ -22,8 +22,9 @@ func createOrGetNewUser(ctx context.Context, email string) (*db.User, error) {
 
 		// create user if it doesn't exist
 		user, err = queries.CreateUser(ctx, db.CreateUserParams{
-			Email: email,
-			Name:  email,
+			Email:       email,
+			Name:        email,
+			PrefMeasure: "metric",
 		})
 
 		if err != nil {
@@ -64,8 +65,9 @@ func handleMe(c *gin.Context) {
 }
 
 type UpdateUserRequest struct {
-	Email string `form:"email" json:"email"`
-	Name  string `form:"name" json:"name"`
+	Email       string `form:"email" json:"email"`
+	Name        string `form:"name" json:"name"`
+	PrefMeasure string `form:"prefMeasure" json:"prefMeasure"`
 }
 
 func handleUpdateMe(c *gin.Context) {
@@ -104,6 +106,13 @@ func handleUpdateMe(c *gin.Context) {
 		params.Name = pgtype.Text{
 			String: request.Name,
 			Valid:  true,
+		}
+	}
+
+	if request.PrefMeasure != "" {
+		params.PrefMeasure = db.NullMeasureType{
+			MeasureType: db.MeasureType(request.PrefMeasure),
+			Valid:       true,
 		}
 	}
 

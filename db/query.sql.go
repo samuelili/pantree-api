@@ -213,7 +213,7 @@ const getUser = `-- name: GetUser :one
 SELECT 
   id, email, name, date_joined, pref_measure 
 FROM 
-  Users
+  Users u
 WHERE
   ($1::uuid IS NOT NULL AND u.id = $1::uuid) 
   OR ($2::text IS NOT NULL AND u.email = $2::text)
@@ -380,7 +380,7 @@ SET
   email = COALESCE($1, email),
   name = COALESCE($2, name),
   date_joined = COALESCE($3, date_joined),
-  pref_measure = COALESCE($4, pref_measure)
+  pref_measure = COALESCE($4::measure_type, pref_measure)
 WHERE 
   id = $5
 RETURNING id, email, name, date_joined, pref_measure

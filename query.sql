@@ -1,3 +1,21 @@
+-- name: GetIngredients :many
+SELECT * FROM Ingredients
+WHERE user_id = sqlc.arg('user_id');
+
+-- date created is current date
+-- name: CreateIngredient :one
+INSERT INTO Ingredients (
+  user_id, name, unit, storage_loc, ingredient_type, image_path
+) VALUES (
+  sqlc.arg('user_id'), 
+  sqlc.arg('name'), 
+  sqlc.arg('unit'), 
+  sqlc.arg('storage_loc'), 
+  sqlc.arg('ingredient_type'), 
+  sqlc.narg('image_path')
+)
+RETURNING *;
+
 -- name: GetRecipe :one
 SELECT * FROM Recipes
 WHERE id = sqlc.arg('id') LIMIT 1;

@@ -192,6 +192,7 @@ func (ns NullUnitType) Value() (driver.Value, error) {
 
 type Ingredient struct {
 	ID             pgtype.UUID
+	UserID         pgtype.UUID
 	Name           string
 	Unit           UnitType
 	StorageLoc     LocType

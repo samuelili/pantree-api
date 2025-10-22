@@ -143,6 +143,39 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getIngredients = `-- name: GetIngredients :many
+SELECT id, user_id, name, unit, storage_loc, ingredient_type, image_path FROM Ingredients
+WHERE user_id = $1
+`
+
+func (q *Queries) GetIngredients(ctx context.Context, userID pgtype.UUID) ([]Ingredient, error) {
+	rows, err := q.db.Query(ctx, getIngredients, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Ingredient
+	for rows.Next() {
+		var i Ingredient
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Name,
+			&i.Unit,
+			&i.StorageLoc,
+			&i.IngredientType,
+			&i.ImagePath,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRecipe = `-- name: GetRecipe :one
 SELECT id, creator_id, date_created, name, description, steps, allergens, cooking_time, serving_size, favorite, image_path FROM Recipes
 WHERE id = $1 LIMIT 1

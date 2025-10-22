@@ -50,6 +50,11 @@ func _handleAddIngredient(c *gin.Context) {
 	log.Printf("Getting  %s\n", userUuid)
 	ingredients, err := queries.GetIngredients(c, getPgtypeUuid(userUuid))
 
+	var request AddIngredientRequest
+	if err := c.BindJSON((&request); err != nil {
+		log
+	})
+
 	if err != nil {
 		log.Println("Could not get ingredients: ", err)
 		c.JSON(500, gin.H{

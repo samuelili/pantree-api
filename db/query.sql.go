@@ -11,6 +11,52 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createIngredient = `-- name: CreateIngredient :one
+INSERT INTO Ingredients (
+  user_id, name, unit, storage_loc, ingredient_type, image_path
+) VALUES (
+  $1, 
+  $2, 
+  $3, 
+  $4, 
+  $5, 
+  $6
+)
+RETURNING id, user_id, name, unit, storage_loc, ingredient_type, image_path
+`
+
+type CreateIngredientParams struct {
+	UserID         pgtype.UUID
+	Name           string
+	Unit           UnitType
+	StorageLoc     LocType
+	IngredientType GrocType
+	ImagePath      pgtype.Text
+}
+
+// date created is current date
+func (q *Queries) CreateIngredient(ctx context.Context, arg CreateIngredientParams) (Ingredient, error) {
+	row := q.db.QueryRow(ctx, createIngredient,
+		arg.UserID,
+		arg.Name,
+		arg.Unit,
+		arg.StorageLoc,
+		arg.IngredientType,
+		arg.ImagePath,
+	)
+	var i Ingredient
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Unit,
+		&i.StorageLoc,
+		&i.IngredientType,
+		&i.ImagePath,
+	)
+	return i, err
+}
+
 const createRecipe = `-- name: CreateRecipe :one
 INSERT INTO Recipes (
   creator_id, date_created, name, description, steps, 

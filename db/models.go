@@ -190,6 +190,11 @@ func (ns NullUnitType) Value() (driver.Value, error) {
 	return string(ns.UnitType), nil
 }
 
+type Favorite struct {
+	UserID   pgtype.UUID
+	RecipeID pgtype.UUID
+}
+
 type Ingredient struct {
 	ID             pgtype.UUID
 	UserID         pgtype.UUID

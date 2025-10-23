@@ -108,6 +108,29 @@ WHERE
   id = sqlc.arg('id')
 RETURNING *;
 
+-- name: AddFavorite :exec
+INSERT INTO Favorites (
+  user_id, recipe_id
+) VALUES (
+  sqlc.arg('user_id'),
+  sqlc.arg('recipe_id')
+)
+RETURNING *;
+
+-- name: RemoveFavorite :exec
+DELETE FROM 
+  Favorites 
+WHERE 
+  user_id = sqlc.arg('user_id') AND recipe_id = sqlc.arg('recipe_id');
+
+-- name: GetFavorites :many
+SELECT
+  recipe_id
+FROM
+  Favorites
+WHERE
+  user_id = sqlc.arg('user_id');
+  
 -- select by either id or email
 -- name: GetUser :one
 SELECT 

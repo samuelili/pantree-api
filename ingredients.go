@@ -51,9 +51,11 @@ func _handleAddIngredient(c *gin.Context) {
 	ingredients, err := queries.GetIngredients(c, getPgtypeUuid(userUuid))
 
 	var request AddIngredientRequest
-	if err := c.BindJSON((&request); err != nil {
-		log
-	})
+	if err := c.BindJSON(&request); err != nil {
+		log.Println("Failed to bind JSON:", err)
+		c.JSON(400, gin.H{"message": "Invalid request body"})
+		return
+	}
 
 	if err != nil {
 		log.Println("Could not get ingredients: ", err)

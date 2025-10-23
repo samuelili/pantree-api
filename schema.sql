@@ -18,6 +18,7 @@ CREATE TYPE GROC_TYPE AS ENUM(
   'alcohol'
 );
 
+-- users
 CREATE TABLE
   Users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
@@ -27,6 +28,7 @@ CREATE TABLE
     pref_measure MEASURE_TYPE NOT NULL DEFAULT 'metric'
   );
 
+-- recipes
 CREATE TABLE
   Recipes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
@@ -40,6 +42,14 @@ CREATE TABLE
     serving_size NUMERIC NOT NULL,
     favorite BOOLEAN NOT NULL,
     image_path TEXT
+  );
+
+-- favorite recipes
+CREATE TABLE
+  Favorites (
+    user_id UUID REFERENCES Users(id),
+    recipe_id UUID REFERENCES Recipes(id),
+    PRIMARY KEY (user_id, recipe_id)
   );
 
 -- recipe -> ingredients link table
@@ -88,7 +98,7 @@ SELECT
   r.recipe_id
 FROM
   RecipeIngredients r
-  JOIN Ingredients i ON r.ingredient_id = i.id;
+JOIN Ingredients i ON r.ingredient_id = i.id;
 
 -- user pantry view
 CREATE VIEW
@@ -103,8 +113,8 @@ SELECT
   i.ingredient_type
 FROM
   Users u
-  JOIN UserItems ui ON u.id = ui.user_id
-  JOIN Ingredients i ON ui.ingredient_id = i.id;
+JOIN UserItems ui ON u.id = ui.user_id
+JOIN Ingredients i ON ui.ingredient_id = i.id;
 
 -- item listing table (defines an ingredient, such as "Whole Milk")
 CREATE TABLE

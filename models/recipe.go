@@ -7,3 +7,8 @@ type Recipe struct {
 	Steps       []string `json:"steps"`
 	Ingredients []string `json:"ingredients"`
 }
+
+type RecipeIngredients struct {
+	IngredientID string  `json:"ingredientId"`
+	Quantity     float64 `json:"quantity"`
+}

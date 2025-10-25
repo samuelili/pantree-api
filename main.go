@@ -63,6 +63,50 @@ func createRecipe(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusCreated, createdRecipe)
+
+	// need to insert ingredients as well
+	// initialize slice of new recipe ingredients
+	// assume input is slice of structs w/ ingredient id, quantity
+	// var recipeIngredients []models.RecipeIngredients
+
+	// ctx := c.Request.Context()
+
+	// tx, err := conn.Begin(ctx)
+	// if err != nil {
+	// 	sendError(c, http.StatusInternalServerError, err, "Failed to start transaction")
+	// 	return
+	// }
+
+	// defer tx.Rollback(ctx)
+
+	// qtx := queries.WithTx(tx)
+	// for _, v := range recipeIngredients {
+
+	// 	var ingredientUUID pgtype.UUID
+	// 	err := ingredientUUID.Scan(v.IngredientID)
+
+	// 	if err != nil {
+	// 		sendError(c, http.StatusBadRequest, err, "Invalid ingredient id")
+	// 		return
+	// 	}
+
+	// 	_, err = qtx.CreateRecipeIngredient(ctx, db.CreateRecipeIngredientParams{
+	// 		RecipeID:     createdRecipe.ID,
+	// 		IngredientID: ingredientUUID,
+	// 		Quantity:     pgtype.Numeric{v.Quantity},
+	// 	})
+	// 	if err != nil {
+	// 		sendError(c, http.StatusInternalServerError, err, "Could not insert ingredient")
+	// 		return
+	// 	}
+
+	// }
+
+	// if err := tx.Commit(ctx); err != nil {
+	// 	sendError(c, http.StatusInternalServerError, err, "Transaction failed")
+	// 	return
+	// }
+
 }
 
 func updateRecipe(c *gin.Context) {
@@ -96,7 +140,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	_conn, err := pgx.Connect(ctx, fmt.Sprintf("user=%s password=%s dbname=%s sslmode=verify-full", cfg.Database.User, cfg.Database.Password, cfg.Database.DBName))
+	// disable ssl_mode = verify_full for testing
+	_conn, err := pgx.Connect(ctx, fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", cfg.Database.User, cfg.Database.Password, cfg.Database.DBName))
 	conn = _conn
 	if err != nil {
 		log.Fatal("Error connecting to the database: ", err)

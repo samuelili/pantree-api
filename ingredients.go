@@ -131,7 +131,9 @@ func _handleAddIngredient(c *gin.Context) {
 
 	var request AddIngredientRequest
 	if err := c.BindJSON(&request); err != nil {
-		log.Println("Invalid request body: \n", err)
+		log.Println("Failed to bind JSON:", err)
+		c.JSON(400, gin.H{"message": "Invalid request body"})
+		return
 	}
 
 	if err != nil {

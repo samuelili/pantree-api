@@ -11,6 +11,26 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addFavorite = `-- name: AddFavorite :exec
+INSERT INTO Favorites (
+  user_id, recipe_id
+) VALUES (
+  $1,
+  $2
+)
+RETURNING user_id, recipe_id
+`
+
+type AddFavoriteParams struct {
+	UserID   pgtype.UUID
+	RecipeID pgtype.UUID
+}
+
+func (q *Queries) AddFavorite(ctx context.Context, arg AddFavoriteParams) error {
+	_, err := q.db.Exec(ctx, addFavorite, arg.UserID, arg.RecipeID)
+	return err
+}
+
 const addItemListing = `-- name: AddItemListing :one
 INSERT INTO
   ItemListing (name, unit_type, creator_id)
@@ -250,6 +270,35 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.PrefMeasure,
 	)
 	return i, err
+}
+
+const getFavorites = `-- name: GetFavorites :many
+SELECT
+  recipe_id
+FROM
+  Favorites
+WHERE
+  user_id = $1
+`
+
+func (q *Queries) GetFavorites(ctx context.Context, userID pgtype.UUID) ([]pgtype.UUID, error) {
+	rows, err := q.db.Query(ctx, getFavorites, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []pgtype.UUID
+	for rows.Next() {
+		var recipe_id pgtype.UUID
+		if err := rows.Scan(&recipe_id); err != nil {
+			return nil, err
+		}
+		items = append(items, recipe_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getIngredients = `-- name: GetIngredients :many
@@ -522,6 +571,23 @@ func (q *Queries) ListRecipes(ctx context.Context) ([]Recipe, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const removeFavorite = `-- name: RemoveFavorite :exec
+DELETE FROM 
+  Favorites 
+WHERE 
+  user_id = $1 AND recipe_id = $2
+`
+
+type RemoveFavoriteParams struct {
+	UserID   pgtype.UUID
+	RecipeID pgtype.UUID
+}
+
+func (q *Queries) RemoveFavorite(ctx context.Context, arg RemoveFavoriteParams) error {
+	_, err := q.db.Exec(ctx, removeFavorite, arg.UserID, arg.RecipeID)
+	return err
 }
 
 const updateRecipe = `-- name: UpdateRecipe :exec

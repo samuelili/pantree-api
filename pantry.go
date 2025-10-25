@@ -151,9 +151,36 @@ func _handleAddIngredient(c *gin.Context) {
 	c.JSON(200, ingredients)
 }
 
-func registerIngredientRoutes(router *gin.RouterGroup) {
-	router.GET("/getListings", _handleGetListings)
-	router.POST("/addListing", _handleAddListing)
-	router.GET("/getEntries", _handleGetEntries)
-	router.POST("/addEntry", _handleAddEntry)
+/**
+ * /getIngredients
+ */
+func _handleGetIngredients(c *gin.Context) {
+	userUuid, err := getUserId(c)
+
+	if err != nil {
+		log.Println("Unable to get user UUID: \n", err)
+	}
+
+	log.Printf("Getting ingredients %s\n", userUuid)
+	ingredients, err := queries.GetIngredients(c, getPgtypeUuid(userUuid))
+
+	if err != nil {
+		log.Println("Could not get ingredients:", err)
+		c.JSON(500, gin.H{
+			"message": "Could not get ingredients.",
+		})
+	}
+
+	if ingredients == nil {
+		ingredients = []db.Ingredient{}
+	}
+
+	c.JSON(200, ingredients)
+}
+
+func registerPantryRoutes(router *gin.RouterGroup) {
+	router.GET("/ingredients", _handleGetIngredients)
+	// router.POST("/addListing", _handleAddListing)
+	// router.GET("/getEntries", _handleGetEntries)
+	// router.POST("/addEntry", _handleAddEntry)
 }

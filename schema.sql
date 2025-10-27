@@ -37,14 +37,14 @@ CREATE TABLE
     name TEXT NOT NULL,
     description TEXT,
     steps TEXT[] NOT NULL,
-    allergens TEXT,
+    allergens TEXT[],
     cooking_time NUMERIC NOT NULL,
     serving_size NUMERIC NOT NULL,
-    favorite BOOLEAN NOT NULL,
     image_path TEXT
   );
 
 -- favorite recipes
+<< << << < HEAD
 CREATE TABLE
   Favorites (
     user_id UUID REFERENCES Users (id),
@@ -52,6 +52,15 @@ CREATE TABLE
     PRIMARY KEY (user_id, recipe_id)
   );
 
+= = = = = = =
+CREATE TABLE
+  Favorites (
+    user_id UUID REFERENCES Users (id),
+    recipe_id UUID REFERENCES Recipes (id),
+    PRIMARY KEY (user_id, recipe_id)
+  );
+
+>> >> >> > c7bfbce59306ff8802e7b2b1b1271dc3122745a1
 -- recipe -> ingredients link table
 CREATE TABLE
   RecipeIngredients (
@@ -67,7 +76,6 @@ CREATE TABLE
 CREATE TABLE
   Ingredients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
-    user_id UUID REFERENCES Users (id),
     name TEXT NOT NULL,
     unit UNIT_TYPE NOT NULL,
     storage_loc LOC_TYPE NOT NULL,

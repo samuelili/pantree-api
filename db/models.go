@@ -197,7 +197,6 @@ type Favorite struct {
 
 type Ingredient struct {
 	ID             pgtype.UUID
-	UserID         pgtype.UUID
 	Name           string
 	Unit           UnitType
 	StorageLoc     LocType
@@ -229,10 +228,9 @@ type Recipe struct {
 	Name        string
 	Description pgtype.Text
 	Steps       []string
-	Allergens   pgtype.Text
+	Allergens   []string
 	CookingTime pgtype.Numeric
 	ServingSize pgtype.Numeric
-	Favorite    bool
 	ImagePath   pgtype.Text
 }
 

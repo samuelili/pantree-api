@@ -6,11 +6,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/jackc/pgx/v5"
-
 	"net/http"
 
 	"pantree/api/db"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,103 +28,6 @@ func bing(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "bong",
 	})
-}
-
-func getRecipes(c *gin.Context) {
-	recipes, err := queries.ListRecipes(c)
-
-	log.Default().Println("recipes: ", recipes)
-
-	if err != nil {
-		sendError(c, http.StatusInternalServerError, err, "Could not fetch recipes")
-		return
-	}
-
-	if len(recipes) == 0 {
-		recipes = []db.Recipe{}
-	}
-
-	c.IndentedJSON(http.StatusOK, recipes)
-}
-
-func createRecipe(c *gin.Context) {
-	var newRecipe db.CreateRecipeParams
-
-	if err := c.BindJSON(&newRecipe); err != nil {
-		sendError(c, http.StatusBadRequest, err, "Invalid request body")
-		return
-	}
-
-	createdRecipe, err := queries.CreateRecipe(ctx, newRecipe)
-
-	if err != nil {
-		sendError(c, http.StatusInternalServerError, err, "Could not create recipe")
-		return
-	}
-
-	c.IndentedJSON(http.StatusCreated, createdRecipe)
-
-	// need to insert ingredients as well
-	// initialize slice of new recipe ingredients
-	// assume input is slice of structs w/ ingredient id, quantity
-	// var recipeIngredients []models.RecipeIngredients
-
-	// ctx := c.Request.Context()
-
-	// tx, err := conn.Begin(ctx)
-	// if err != nil {
-	// 	sendError(c, http.StatusInternalServerError, err, "Failed to start transaction")
-	// 	return
-	// }
-
-	// defer tx.Rollback(ctx)
-
-	// qtx := queries.WithTx(tx)
-	// for _, v := range recipeIngredients {
-
-	// 	var ingredientUUID pgtype.UUID
-	// 	err := ingredientUUID.Scan(v.IngredientID)
-
-	// 	if err != nil {
-	// 		sendError(c, http.StatusBadRequest, err, "Invalid ingredient id")
-	// 		return
-	// 	}
-
-	// 	_, err = qtx.CreateRecipeIngredient(ctx, db.CreateRecipeIngredientParams{
-	// 		RecipeID:     createdRecipe.ID,
-	// 		IngredientID: ingredientUUID,
-	// 		Quantity:     pgtype.Numeric{v.Quantity},
-	// 	})
-	// 	if err != nil {
-	// 		sendError(c, http.StatusInternalServerError, err, "Could not insert ingredient")
-	// 		return
-	// 	}
-
-	// }
-
-	// if err := tx.Commit(ctx); err != nil {
-	// 	sendError(c, http.StatusInternalServerError, err, "Transaction failed")
-	// 	return
-	// }
-
-}
-
-func updateRecipe(c *gin.Context) {
-	var updateRecipe db.UpdateRecipeParams
-
-	if err := c.BindJSON(&updateRecipe); err != nil {
-		sendError(c, http.StatusBadRequest, err, "Invalid request body")
-		return
-	}
-
-	err := queries.UpdateRecipe(ctx, updateRecipe)
-
-	if err != nil {
-		sendError(c, http.StatusInternalServerError, err, "Could not update recipe")
-		return
-	}
-
-	c.IndentedJSON(http.StatusOK, gin.H{"message": "Recipe updated successfully"})
 }
 
 func main() {

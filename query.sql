@@ -2,32 +2,20 @@
 SELECT
   *
 FROM
-  Ingredients
-WHERE
-  user_id = sqlc.arg ('user_id');
+  Ingredients;
 
 -- date created is current date
 -- name: CreateIngredient :one
-INSERT INTO
-  Ingredients (
-    user_id,
-    name,
-    unit,
-    storage_loc,
-    ingredient_type,
-    image_path
-  )
-VALUES
-  (
-    sqlc.arg ('user_id'),
-    sqlc.arg ('name'),
-    sqlc.arg ('unit'),
-    sqlc.arg ('storage_loc'),
-    sqlc.arg ('ingredient_type'),
-    sqlc.narg ('image_path')
-  )
-RETURNING
-  *;
+INSERT INTO Ingredients (
+  name, unit, storage_loc, ingredient_type, image_path
+) VALUES (
+  sqlc.arg('name'), 
+  sqlc.arg('unit'), 
+  sqlc.arg('storage_loc'), 
+  sqlc.arg('ingredient_type'), 
+  sqlc.narg('image_path')
+)
+RETURNING *;
 
 -- name: GetRecipe :one
 SELECT
@@ -47,53 +35,38 @@ FROM
 
 -- date created is current date
 -- name: CreateRecipe :one
-INSERT INTO
-  Recipes (
-    creator_id,
-    date_created,
-    name,
-    description,
-    steps,
-    allergens,
-    cooking_time,
-    serving_size,
-    favorite,
-    image_path
-  )
-VALUES
-  (
-    sqlc.arg ('creator_id'),
-    CURRENT_DATE,
-    sqlc.arg ('name'),
-    sqlc.arg ('description'),
-    sqlc.arg ('steps'),
-    sqlc.narg ('allergens'),
-    sqlc.arg ('cooking_time'),
-    sqlc.arg ('serving_size'),
-    sqlc.arg ('favorite'),
-    sqlc.narg ('image_path')
-  )
-RETURNING
-  *;
+INSERT INTO Recipes (
+  creator_id, date_created, name, description, steps, 
+  allergens, cooking_time, serving_size, image_path  
+) VALUES (
+  sqlc.arg('creator_id'), 
+  CURRENT_DATE, 
+  sqlc.arg('name'), 
+  sqlc.arg('description'), 
+  sqlc.arg('steps'),
+  sqlc.narg('allergens'),
+  sqlc.arg('cooking_time'),
+  sqlc.arg('serving_size'),
+  sqlc.narg('image_path')
+)
+RETURNING *;
 
 -- all fields are optional except for id
 -- name: UpdateRecipe :exec
 UPDATE Recipes
 SET
-  creator_id = COALESCE(sqlc.narg ('creator_id'), creator_id),
-  date_created = COALESCE(sqlc.narg ('date_created'), date_created),
-  name = COALESCE(sqlc.narg ('name'), name),
-  description = COALESCE(sqlc.narg ('description'), description),
-  steps = COALESCE(sqlc.narg ('steps'), steps),
-  allergens = COALESCE(sqlc.narg ('allergens'), allergens),
-  cooking_time = COALESCE(sqlc.narg ('cooking_time'), cooking_time),
-  serving_size = COALESCE(sqlc.narg ('serving_size'), serving_size),
-  favorite = COALESCE(sqlc.narg ('favorite'), favorite),
-  image_path = COALESCE(sqlc.narg ('image_path'), image_path)
-WHERE
-  id = sqlc.arg ('id')
-RETURNING
-  *;
+  creator_id = COALESCE(sqlc.narg('creator_id'), creator_id),
+  date_created = COALESCE(sqlc.narg('date_created'), date_created),
+  name = COALESCE(sqlc.narg('name'), name),
+  description = COALESCE(sqlc.narg('description'), description),
+  steps = COALESCE(sqlc.narg('steps'), steps),
+  allergens = COALESCE(sqlc.narg('allergens'), allergens),
+  cooking_time = COALESCE(sqlc.narg('cooking_time'), cooking_time),
+  serving_size = COALESCE(sqlc.narg('serving_size'), serving_size),
+  image_path = COALESCE(sqlc.narg('image_path'), image_path)
+WHERE 
+  id = sqlc.arg('id')
+RETURNING *;
 
 -- name: CreateRecipeIngredient :one
 INSERT INTO

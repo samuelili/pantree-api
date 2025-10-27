@@ -2,9 +2,7 @@
 SELECT
   *
 FROM
-  Ingredients
-WHERE
-  user_id = sqlc.arg ('user_id');
+  Ingredients;
 
 -- date created is current date
 -- name: CreateIngredient :one

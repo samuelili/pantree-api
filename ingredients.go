@@ -11,14 +11,8 @@ import (
  * /getIngredients
  */
 func _handleGetIngredients(c *gin.Context) {
-	userUuid, err := getUserId(c)
-
-	if err != nil {
-		log.Println("Unable to get user UUID: \n", err)
-	}
-
-	log.Printf("Getting ingredients %s\n", userUuid)
-	ingredients, err := queries.GetIngredients(c, getPgtypeUuid(userUuid))
+	log.Println("Getting ingredients")
+	ingredients, err := queries.GetIngredients(c)
 
 	if err != nil {
 		log.Println("Could not get ingredients:", err)
@@ -61,10 +55,10 @@ func _handleNewIngredient(c *gin.Context) {
 		return
 	}
 
-	log.Printf("Creating new ingredient for user %s\n", userUuid)
+	log.Printf("Creating new ingredient for user %s", userUuid)
 
 	newIngredient, err := queries.CreateIngredient(c, db.CreateIngredientParams{
-		UserID:         getPgtypeUuid(userUuid),
+		CreatorID:      getPgtypeUuid(userUuid),
 		Name:           request.Name,
 		Unit:           request.Unit,
 		StorageLoc:     request.StorageLoc,

@@ -66,6 +66,7 @@ CREATE TABLE
 CREATE TABLE
   Ingredients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    creator_id UUID REFERENCES Users (id),
     name TEXT NOT NULL,
     unit UNIT_TYPE NOT NULL,
     storage_loc LOC_TYPE NOT NULL,

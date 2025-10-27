@@ -197,6 +197,7 @@ type Favorite struct {
 
 type Ingredient struct {
 	ID             pgtype.UUID
+	CreatorID      pgtype.UUID
 	Name           string
 	Unit           UnitType
 	StorageLoc     LocType

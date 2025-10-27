@@ -33,18 +33,20 @@ func (q *Queries) AddFavorite(ctx context.Context, arg AddFavoriteParams) error 
 
 const createIngredient = `-- name: CreateIngredient :one
 INSERT INTO Ingredients (
-  name, unit, storage_loc, ingredient_type, image_path
+  creator_id, name, unit, storage_loc, ingredient_type, image_path
 ) VALUES (
-  $1, 
+  $1,
   $2, 
   $3, 
   $4, 
-  $5
+  $5, 
+  $6
 )
-RETURNING id, name, unit, storage_loc, ingredient_type, image_path
+RETURNING id, creator_id, name, unit, storage_loc, ingredient_type, image_path
 `
 
 type CreateIngredientParams struct {
+	CreatorID      pgtype.UUID
 	Name           string
 	Unit           UnitType
 	StorageLoc     LocType
@@ -55,6 +57,7 @@ type CreateIngredientParams struct {
 // date created is current date
 func (q *Queries) CreateIngredient(ctx context.Context, arg CreateIngredientParams) (Ingredient, error) {
 	row := q.db.QueryRow(ctx, createIngredient,
+		arg.CreatorID,
 		arg.Name,
 		arg.Unit,
 		arg.StorageLoc,
@@ -64,6 +67,7 @@ func (q *Queries) CreateIngredient(ctx context.Context, arg CreateIngredientPara
 	var i Ingredient
 	err := row.Scan(
 		&i.ID,
+		&i.CreatorID,
 		&i.Name,
 		&i.Unit,
 		&i.StorageLoc,
@@ -242,7 +246,7 @@ func (q *Queries) GetFavorites(ctx context.Context, userID pgtype.UUID) ([]pgtyp
 
 const getIngredients = `-- name: GetIngredients :many
 SELECT
-  id, name, unit, storage_loc, ingredient_type, image_path
+  id, creator_id, name, unit, storage_loc, ingredient_type, image_path
 FROM
   Ingredients
 `
@@ -258,6 +262,7 @@ func (q *Queries) GetIngredients(ctx context.Context) ([]Ingredient, error) {
 		var i Ingredient
 		if err := rows.Scan(
 			&i.ID,
+			&i.CreatorID,
 			&i.Name,
 			&i.Unit,
 			&i.StorageLoc,

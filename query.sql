@@ -7,8 +7,9 @@ FROM
 -- date created is current date
 -- name: CreateIngredient :one
 INSERT INTO Ingredients (
-  name, unit, storage_loc, ingredient_type, image_path
+  creator_id, name, unit, storage_loc, ingredient_type, image_path
 ) VALUES (
+  sqlc.arg('creator_id'),
   sqlc.arg('name'), 
   sqlc.arg('unit'), 
   sqlc.arg('storage_loc'), 

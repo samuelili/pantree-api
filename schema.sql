@@ -47,8 +47,8 @@ CREATE TABLE
 -- favorite recipes
 CREATE TABLE
   Favorites (
-    user_id UUID REFERENCES Users(id),
-    recipe_id UUID REFERENCES Recipes(id),
+    user_id UUID REFERENCES Users (id),
+    recipe_id UUID REFERENCES Recipes (id),
     PRIMARY KEY (user_id, recipe_id)
   );
 
@@ -98,7 +98,7 @@ SELECT
   r.recipe_id
 FROM
   RecipeIngredients r
-JOIN Ingredients i ON r.ingredient_id = i.id;
+  JOIN Ingredients i ON r.ingredient_id = i.id;
 
 -- user pantry view
 CREATE VIEW
@@ -113,26 +113,5 @@ SELECT
   i.ingredient_type
 FROM
   Users u
-JOIN UserItems ui ON u.id = ui.user_id
-JOIN Ingredients i ON ui.ingredient_id = i.id;
-
--- item listing table (defines an ingredient, such as "Whole Milk")
-CREATE TABLE
-  ItemListing (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
-    name TEXT NOT NULL,
-    unit_type UNIT_TYPE NOT NULL,
-    creator_id UUID REFERENCES Users (id) ON DELETE SET NULL
-  );
-
--- item entry table (defines the presence of an ingredient, such as "2 liters of Whole Milk that expires in 2 weeks")
-CREATE TABLE
-  ItemEntry (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
-    ingredient_id UUID REFERENCES ItemListing (id) ON DELETE CASCADE,
-    quantity NUMERIC NOT NULL,
-    unit_type UNIT_TYPE NOT NULL,
-    measure_type MEASURE_TYPE NOT NULL,
-    expiration_date DATE,
-    display_unit TEXT NOT NULL
-  );
+  JOIN UserItems ui ON u.id = ui.user_id
+  JOIN Ingredients i ON ui.ingredient_id = i.id;

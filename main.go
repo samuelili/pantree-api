@@ -166,8 +166,11 @@ func main() {
 	users := api.Group("/users")
 	registerUserRoutes(users)
 
-	ingredients := api.Group("/pantry")
-	registerPantryRoutes(ingredients)
+	ingredients := api.Group("/ingredients")
+	registerIngredientsRoutes(ingredients)
+
+	pantry := api.Group("/pantry")
+	registerPantryRoutes(pantry)
 
 	router.Run(fmt.Sprintf("%s:%s", cfg.Server.Broadcast, cfg.Server.Port))
 }

@@ -217,23 +217,3 @@ WHERE
     sqlc.narg ('email')::text IS NOT NULL
     AND email = sqlc.narg ('email')::text
   );
-
--- get all item listing
--- name: GetItemListings :many
-SELECT
-  *
-FROM
-  ItemListing;
-
--- add item listing
--- name: AddItemListing :one
-INSERT INTO
-  ItemListing (name, unit_type, creator_id)
-VALUES
-  (
-    sqlc.arg ('name'),
-    sqlc.arg ('unit_type'),
-    sqlc.arg ('creator_id')
-  )
-RETURNING
-  *;

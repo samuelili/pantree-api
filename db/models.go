@@ -204,23 +204,6 @@ type Ingredient struct {
 	ImagePath      pgtype.Text
 }
 
-type Itementry struct {
-	ID             pgtype.UUID
-	IngredientID   pgtype.UUID
-	Quantity       pgtype.Numeric
-	UnitType       UnitType
-	MeasureType    MeasureType
-	ExpirationDate pgtype.Date
-	DisplayUnit    string
-}
-
-type Itemlisting struct {
-	ID        pgtype.UUID
-	Name      string
-	UnitType  UnitType
-	CreatorID pgtype.UUID
-}
-
 type Recipe struct {
 	ID          pgtype.UUID
 	CreatorID   pgtype.UUID

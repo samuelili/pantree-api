@@ -44,23 +44,13 @@ CREATE TABLE
   );
 
 -- favorite recipes
-<< << << < HEAD
 CREATE TABLE
   Favorites (
     user_id UUID REFERENCES Users (id),
     recipe_id UUID REFERENCES Recipes (id),
     PRIMARY KEY (user_id, recipe_id)
   );
-
-= = = = = = =
-CREATE TABLE
-  Favorites (
-    user_id UUID REFERENCES Users (id),
-    recipe_id UUID REFERENCES Recipes (id),
-    PRIMARY KEY (user_id, recipe_id)
-  );
-
->> >> >> > c7bfbce59306ff8802e7b2b1b1271dc3122745a1
+  
 -- recipe -> ingredients link table
 CREATE TABLE
   RecipeIngredients (

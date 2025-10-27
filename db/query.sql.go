@@ -31,38 +31,6 @@ func (q *Queries) AddFavorite(ctx context.Context, arg AddFavoriteParams) error 
 	return err
 }
 
-const addItemListing = `-- name: AddItemListing :one
-INSERT INTO
-  ItemListing (name, unit_type, creator_id)
-VALUES
-  (
-    $1,
-    $2,
-    $3
-  )
-RETURNING
-  id, name, unit_type, creator_id
-`
-
-type AddItemListingParams struct {
-	Name      string
-	UnitType  UnitType
-	CreatorID pgtype.UUID
-}
-
-// add item listing
-func (q *Queries) AddItemListing(ctx context.Context, arg AddItemListingParams) (Itemlisting, error) {
-	row := q.db.QueryRow(ctx, addItemListing, arg.Name, arg.UnitType, arg.CreatorID)
-	var i Itemlisting
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.UnitType,
-		&i.CreatorID,
-	)
-	return i, err
-}
-
 const createIngredient = `-- name: CreateIngredient :one
 INSERT INTO Ingredients (
   name, unit, storage_loc, ingredient_type, image_path
@@ -295,39 +263,6 @@ func (q *Queries) GetIngredients(ctx context.Context) ([]Ingredient, error) {
 			&i.StorageLoc,
 			&i.IngredientType,
 			&i.ImagePath,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getItemListings = `-- name: GetItemListings :many
-SELECT
-  id, name, unit_type, creator_id
-FROM
-  ItemListing
-`
-
-// get all item listing
-func (q *Queries) GetItemListings(ctx context.Context) ([]Itemlisting, error) {
-	rows, err := q.db.Query(ctx, getItemListings)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Itemlisting
-	for rows.Next() {
-		var i Itemlisting
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.UnitType,
-			&i.CreatorID,
 		); err != nil {
 			return nil, err
 		}

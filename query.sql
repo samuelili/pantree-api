@@ -1,13 +1,11 @@
 -- name: GetIngredients :many
-SELECT * FROM Ingredients
-WHERE user_id = sqlc.arg('user_id');
+SELECT * FROM Ingredients;
 
 -- date created is current date
 -- name: CreateIngredient :one
 INSERT INTO Ingredients (
-  user_id, name, unit, storage_loc, ingredient_type, image_path
+  name, unit, storage_loc, ingredient_type, image_path
 ) VALUES (
-  sqlc.arg('user_id'), 
   sqlc.arg('name'), 
   sqlc.arg('unit'), 
   sqlc.arg('storage_loc'), 
@@ -27,7 +25,7 @@ SELECT * FROM Recipes;
 -- name: CreateRecipe :one
 INSERT INTO Recipes (
   creator_id, date_created, name, description, steps, 
-  allergens, cooking_time, serving_size, favorite, image_path  
+  allergens, cooking_time, serving_size, image_path  
 ) VALUES (
   sqlc.arg('creator_id'), 
   CURRENT_DATE, 
@@ -37,7 +35,6 @@ INSERT INTO Recipes (
   sqlc.narg('allergens'),
   sqlc.arg('cooking_time'),
   sqlc.arg('serving_size'),
-  sqlc.arg('favorite'),
   sqlc.narg('image_path')
 )
 RETURNING *;
@@ -54,7 +51,6 @@ SET
   allergens = COALESCE(sqlc.narg('allergens'), allergens),
   cooking_time = COALESCE(sqlc.narg('cooking_time'), cooking_time),
   serving_size = COALESCE(sqlc.narg('serving_size'), serving_size),
-  favorite = COALESCE(sqlc.narg('favorite'), favorite),
   image_path = COALESCE(sqlc.narg('image_path'), image_path)
 WHERE 
   id = sqlc.arg('id')

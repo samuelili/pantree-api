@@ -15,7 +15,7 @@ func _handleAll(c *gin.Context) {
 	}
 
 	log.Printf("Getting all ingredients %s\n", userUuid)
-	ingredients, err := queries.GetIngredients(c, getPgtypeUuid(userUuid))
+	ingredients, err := queries.GetIngredients(c)
 
 	if err != nil {
 		log.Println("Could not get ingredients: ", err)
@@ -48,7 +48,7 @@ func _handleAddIngredient(c *gin.Context) {
 	}
 
 	log.Printf("Getting  %s\n", userUuid)
-	ingredients, err := queries.GetIngredients(c, getPgtypeUuid(userUuid))
+	ingredients, err := queries.GetIngredients(c)
 
 	var request AddIngredientRequest
 	if err := c.BindJSON(&request); err != nil {

@@ -33,20 +33,18 @@ func (q *Queries) AddFavorite(ctx context.Context, arg AddFavoriteParams) error 
 
 const createIngredient = `-- name: CreateIngredient :one
 INSERT INTO Ingredients (
-  user_id, name, unit, storage_loc, ingredient_type, image_path
+  name, unit, storage_loc, ingredient_type, image_path
 ) VALUES (
   $1, 
   $2, 
   $3, 
   $4, 
-  $5, 
-  $6
+  $5
 )
-RETURNING id, user_id, name, unit, storage_loc, ingredient_type, image_path
+RETURNING id, name, unit, storage_loc, ingredient_type, image_path
 `
 
 type CreateIngredientParams struct {
-	UserID         pgtype.UUID
 	Name           string
 	Unit           UnitType
 	StorageLoc     LocType
@@ -57,7 +55,6 @@ type CreateIngredientParams struct {
 // date created is current date
 func (q *Queries) CreateIngredient(ctx context.Context, arg CreateIngredientParams) (Ingredient, error) {
 	row := q.db.QueryRow(ctx, createIngredient,
-		arg.UserID,
 		arg.Name,
 		arg.Unit,
 		arg.StorageLoc,
@@ -67,7 +64,6 @@ func (q *Queries) CreateIngredient(ctx context.Context, arg CreateIngredientPara
 	var i Ingredient
 	err := row.Scan(
 		&i.ID,
-		&i.UserID,
 		&i.Name,
 		&i.Unit,
 		&i.StorageLoc,
@@ -80,7 +76,7 @@ func (q *Queries) CreateIngredient(ctx context.Context, arg CreateIngredientPara
 const createRecipe = `-- name: CreateRecipe :one
 INSERT INTO Recipes (
   creator_id, date_created, name, description, steps, 
-  allergens, cooking_time, serving_size, favorite, image_path  
+  allergens, cooking_time, serving_size, image_path  
 ) VALUES (
   $1, 
   CURRENT_DATE, 
@@ -90,10 +86,9 @@ INSERT INTO Recipes (
   $5,
   $6,
   $7,
-  $8,
-  $9
+  $8
 )
-RETURNING id, creator_id, date_created, name, description, steps, allergens, cooking_time, serving_size, favorite, image_path
+RETURNING id, creator_id, date_created, name, description, steps, allergens, cooking_time, serving_size, image_path
 `
 
 type CreateRecipeParams struct {
@@ -101,10 +96,9 @@ type CreateRecipeParams struct {
 	Name        string
 	Description pgtype.Text
 	Steps       []string
-	Allergens   pgtype.Text
+	Allergens   []string
 	CookingTime pgtype.Numeric
 	ServingSize pgtype.Numeric
-	Favorite    bool
 	ImagePath   pgtype.Text
 }
 
@@ -118,7 +112,6 @@ func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Rec
 		arg.Allergens,
 		arg.CookingTime,
 		arg.ServingSize,
-		arg.Favorite,
 		arg.ImagePath,
 	)
 	var i Recipe
@@ -132,7 +125,6 @@ func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Rec
 		&i.Allergens,
 		&i.CookingTime,
 		&i.ServingSize,
-		&i.Favorite,
 		&i.ImagePath,
 	)
 	return i, err
@@ -239,12 +231,11 @@ func (q *Queries) GetFavorites(ctx context.Context, userID pgtype.UUID) ([]pgtyp
 }
 
 const getIngredients = `-- name: GetIngredients :many
-SELECT id, user_id, name, unit, storage_loc, ingredient_type, image_path FROM Ingredients
-WHERE user_id = $1
+SELECT id, name, unit, storage_loc, ingredient_type, image_path FROM Ingredients
 `
 
-func (q *Queries) GetIngredients(ctx context.Context, userID pgtype.UUID) ([]Ingredient, error) {
-	rows, err := q.db.Query(ctx, getIngredients, userID)
+func (q *Queries) GetIngredients(ctx context.Context) ([]Ingredient, error) {
+	rows, err := q.db.Query(ctx, getIngredients)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +245,6 @@ func (q *Queries) GetIngredients(ctx context.Context, userID pgtype.UUID) ([]Ing
 		var i Ingredient
 		if err := rows.Scan(
 			&i.ID,
-			&i.UserID,
 			&i.Name,
 			&i.Unit,
 			&i.StorageLoc,
@@ -272,7 +262,7 @@ func (q *Queries) GetIngredients(ctx context.Context, userID pgtype.UUID) ([]Ing
 }
 
 const getRecipe = `-- name: GetRecipe :one
-SELECT id, creator_id, date_created, name, description, steps, allergens, cooking_time, serving_size, favorite, image_path FROM Recipes
+SELECT id, creator_id, date_created, name, description, steps, allergens, cooking_time, serving_size, image_path FROM Recipes
 WHERE id = $1 LIMIT 1
 `
 
@@ -289,7 +279,6 @@ func (q *Queries) GetRecipe(ctx context.Context, id pgtype.UUID) (Recipe, error)
 		&i.Allergens,
 		&i.CookingTime,
 		&i.ServingSize,
-		&i.Favorite,
 		&i.ImagePath,
 	)
 	return i, err
@@ -417,7 +406,7 @@ func (q *Queries) GetUserPantry(ctx context.Context, arg GetUserPantryParams) ([
 }
 
 const listRecipes = `-- name: ListRecipes :many
-SELECT id, creator_id, date_created, name, description, steps, allergens, cooking_time, serving_size, favorite, image_path FROM Recipes
+SELECT id, creator_id, date_created, name, description, steps, allergens, cooking_time, serving_size, image_path FROM Recipes
 `
 
 func (q *Queries) ListRecipes(ctx context.Context) ([]Recipe, error) {
@@ -439,7 +428,6 @@ func (q *Queries) ListRecipes(ctx context.Context) ([]Recipe, error) {
 			&i.Allergens,
 			&i.CookingTime,
 			&i.ServingSize,
-			&i.Favorite,
 			&i.ImagePath,
 		); err != nil {
 			return nil, err
@@ -480,11 +468,10 @@ SET
   allergens = COALESCE($6, allergens),
   cooking_time = COALESCE($7, cooking_time),
   serving_size = COALESCE($8, serving_size),
-  favorite = COALESCE($9, favorite),
-  image_path = COALESCE($10, image_path)
+  image_path = COALESCE($9, image_path)
 WHERE 
-  id = $11
-RETURNING id, creator_id, date_created, name, description, steps, allergens, cooking_time, serving_size, favorite, image_path
+  id = $10
+RETURNING id, creator_id, date_created, name, description, steps, allergens, cooking_time, serving_size, image_path
 `
 
 type UpdateRecipeParams struct {
@@ -493,10 +480,9 @@ type UpdateRecipeParams struct {
 	Name        pgtype.Text
 	Description pgtype.Text
 	Steps       []string
-	Allergens   pgtype.Text
+	Allergens   []string
 	CookingTime pgtype.Numeric
 	ServingSize pgtype.Numeric
-	Favorite    pgtype.Bool
 	ImagePath   pgtype.Text
 	ID          pgtype.UUID
 }
@@ -512,7 +498,6 @@ func (q *Queries) UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) erro
 		arg.Allergens,
 		arg.CookingTime,
 		arg.ServingSize,
-		arg.Favorite,
 		arg.ImagePath,
 		arg.ID,
 	)

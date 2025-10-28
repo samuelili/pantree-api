@@ -2,7 +2,9 @@
 SELECT
   *
 FROM
-  Ingredients;
+  Ingredients
+WHERE
+  name = sqlc.arg('name');
 
 -- date created is current date
 -- name: CreateIngredient :one

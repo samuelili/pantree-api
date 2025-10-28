@@ -62,10 +62,6 @@ func main() {
 
 	api := router.Group("/api", middleware.MiddlewareFunc())
 
-	api.GET("/recipes", getRecipes)
-	api.POST("/recipes/create", createRecipe)
-	api.PUT("/recipes/update", updateRecipe)
-
 	users := api.Group("/users")
 	registerUserRoutes(users)
 
@@ -74,6 +70,9 @@ func main() {
 
 	pantry := api.Group("/pantry")
 	registerPantryRoutes(pantry)
+
+	recipes := api.Group("/recipes")
+	registerRecipeRoutes(recipes)
 
 	router.Run(fmt.Sprintf("%s:%s", cfg.Server.Broadcast, cfg.Server.Port))
 }

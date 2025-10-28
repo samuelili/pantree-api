@@ -31,21 +31,20 @@ func getRecipes(c *gin.Context) {
 }
 
 type RecipeRequest struct {
-	Name        string   `json:"name"`
+	Name        string   `json:"name" binding:"required"`
 	Description string   `json:"description"`
-	Steps       []string `json:"steps"`
-	Allergens   []string `json:"allergens"`
-	CookingTime float64  `json:"cookingtime"`
-	ServingSize float64  `json:"servingsize"`
-	Favorite    bool     `json:"favorite"`
+	Steps       []string `json:"steps" binding:"required"`
+	Allergens   []string `json:"allergens" binding:"required"`
+	CookingTime float64  `json:"cookingtime" binding:"required"`
+	ServingSize float64  `json:"servingsize" binding:"required"`
 	ImagePath   string   `json:"imagepath"`
 }
 
 type RecipeIngredientRequest struct {
-	Ingredient        string  `json:"ingredient"`
-	Quantity          float64 `json:"quantity"`
-	AuthorUnitType    string  `json:"authorunittype"`
-	AuthorMeasureType string  `json:"authormeasuretype"`
+	Ingredient        string  `json:"ingredient" binding:"required"`
+	Quantity          float64 `json:"quantity" binding:"required"`
+	AuthorUnitType    string  `json:"authorunittype" binding:"required"`
+	AuthorMeasureType string  `json:"authormeasuretype" binding:"required"`
 }
 
 func createRecipe(c *gin.Context) {
@@ -157,4 +156,10 @@ func updateRecipe(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "Recipe updated successfully"})
+}
+
+func registerRecipeRoutes(router *gin.RouterGroup) {
+	router.GET("/get", getRecipes)
+	router.POST("/create", createRecipe)
+	router.POST("/update", updateRecipe)
 }

@@ -249,10 +249,12 @@ SELECT
   id, creator_id, name, unit, storage_loc, ingredient_type, image_path
 FROM
   Ingredients
+WHERE
+  name = $1
 `
 
-func (q *Queries) GetIngredients(ctx context.Context) ([]Ingredient, error) {
-	rows, err := q.db.Query(ctx, getIngredients)
+func (q *Queries) GetIngredients(ctx context.Context, name string) ([]Ingredient, error) {
+	rows, err := q.db.Query(ctx, getIngredients, name)
 	if err != nil {
 		return nil, err
 	}

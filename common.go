@@ -8,3 +8,9 @@ func getPgtypeText(s string) pgtype.Text {
 		Valid:  true,
 	}
 }
+
+func getPgtypeNumeric(s string) (pgtype.Numeric, error) {
+	var numeric pgtype.Numeric
+	err := numeric.Scan(s)
+	return numeric, err
+}

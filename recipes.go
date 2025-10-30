@@ -31,33 +31,28 @@ func getRecipes(c *gin.Context) {
 }
 
 type RecipeRequest struct {
-	Name        string   `json:"name" binding:"required"`
-	Description string   `json:"description"`
-	Steps       []string `json:"steps" binding:"required"`
-	Allergens   []string `json:"allergens" binding:"required"`
-	CookingTime float64  `json:"cookingtime" binding:"required"`
-	ServingSize float64  `json:"servingsize" binding:"required"`
-	ImagePath   string   `json:"imagepath"`
+	Name        string             `json:"name" binding:"required"`
+	Description string             `json:"description"`
+	Steps       []string           `json:"steps" binding:"required"`
+	Allergens   []string           `json:"allergens" binding:"required"`
+	CookingTime string             `json:"cookingtime" binding:"required"`
+	ServingSize string             `json:"servingsize" binding:"required"`
+	ImagePath   string             `json:"imagepath"`
+	Ingredients []RecipeIngredient `json:"ingredients" binding:"required"`
 }
 
-type RecipeIngredientRequest struct {
-	Ingredient        string  `json:"ingredient" binding:"required"`
-	Quantity          float64 `json:"quantity" binding:"required"`
-	AuthorUnitType    string  `json:"authorunittype" binding:"required"`
-	AuthorMeasureType string  `json:"authormeasuretype" binding:"required"`
+type RecipeIngredient struct {
+	Ingredient        string `json:"ingredient" binding:"required"`
+	Quantity          string `json:"quantity" binding:"required"`
+	AuthorUnitType    string `json:"authorunittype" binding:"required"`
+	AuthorMeasureType string `json:"authormeasuretype" binding:"required"`
 }
 
 func createRecipe(c *gin.Context) {
 	var request RecipeRequest
+	var err error
 
 	if err := c.ShouldBindBodyWith(&request, binding.JSON); err != nil {
-		sendError(c, http.StatusBadRequest, err, "Invalid request body")
-		return
-	}
-
-	var requestIngredients []RecipeIngredientRequest
-
-	if err := c.ShouldBindBodyWith(&requestIngredients, binding.JSON); err != nil {
 		sendError(c, http.StatusBadRequest, err, "Invalid request body")
 		return
 	}
@@ -79,17 +74,24 @@ func createRecipe(c *gin.Context) {
 		}
 	}
 
-	newRecipe.CookingTime = pgtype.Numeric{}
-	_ = newRecipe.CookingTime.Scan(request.CookingTime)
+	newRecipe.CookingTime, err = getPgtypeNumeric(request.CookingTime)
+	if err != nil {
+		sendError(c, http.StatusBadRequest, err, "Invalid cooking time")
+		return
+	}
 	newRecipe.CookingTime.Valid = true
 
-	newRecipe.ServingSize = pgtype.Numeric{}
-	_ = newRecipe.ServingSize.Scan(request.ServingSize)
+	newRecipe.ServingSize, err = getPgtypeNumeric(request.ServingSize)
+	if err != nil {
+		sendError(c, http.StatusBadRequest, err, "Invalid serving size")
+		return
+	}
 	newRecipe.ServingSize.Valid = true
 
 	ctx := c.Request.Context()
 
 	tx, err := conn.Begin(ctx)
+
 	if err != nil {
 		sendError(c, http.StatusInternalServerError, err, "Failed to start transaction")
 		return
@@ -108,20 +110,28 @@ func createRecipe(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusCreated, createdRecipe)
 
-	for idx, ingredient := range requestIngredients {
+	requestIngredients := request.Ingredients
+
+	for _, ingredient := range requestIngredients {
 
 		recipeIngredient := db.CreateRecipeIngredientParams{
 			RecipeID:          createdRecipe.ID,
-			AuthorUnitType:    db.UnitType(requestIngredients[idx].AuthorUnitType),
-			AuthorMeasureType: db.MeasureType(requestIngredients[idx].AuthorMeasureType),
+			AuthorUnitType:    db.UnitType(ingredient.AuthorUnitType),
+			AuthorMeasureType: db.MeasureType(ingredient.AuthorMeasureType),
 		}
 
 		recipeIngredient.IngredientID = pgtype.UUID{}
-		_ = recipeIngredient.IngredientID.Scan(ingredient)
+		if err := recipeIngredient.IngredientID.Scan(ingredient.Ingredient); err != nil {
+			sendError(c, http.StatusBadRequest, err, "Invalid ingredient UUID")
+			return
+		}
 		recipeIngredient.IngredientID.Valid = true
 
-		recipeIngredient.Quantity = pgtype.Numeric{}
-		_ = recipeIngredient.Quantity.Scan(requestIngredients[idx].Quantity)
+		recipeIngredient.Quantity, err = getPgtypeNumeric(ingredient.Quantity)
+		if err != nil {
+			sendError(c, http.StatusBadRequest, err, "Invalid Quantity")
+			return
+		}
 		recipeIngredient.Quantity.Valid = true
 
 		_, err = qtx.CreateRecipeIngredient(ctx, recipeIngredient)
@@ -129,7 +139,6 @@ func createRecipe(c *gin.Context) {
 			sendError(c, http.StatusInternalServerError, err, "Could not insert ingredient")
 			return
 		}
-
 	}
 
 	if err := tx.Commit(ctx); err != nil {

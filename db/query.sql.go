@@ -32,6 +32,7 @@ func (q *Queries) AddFavorite(ctx context.Context, arg AddFavoriteParams) error 
 }
 
 const createIngredient = `-- name: CreateIngredient :one
+
 INSERT INTO Ingredients (
   creator_id, name, unit, storage_loc, ingredient_type, image_path
 ) VALUES (
@@ -54,6 +55,10 @@ type CreateIngredientParams struct {
 	ImagePath      pgtype.Text
 }
 
+// WHERE
+//
+//	name = sqlc.arg('name');
+//
 // date created is current date
 func (q *Queries) CreateIngredient(ctx context.Context, arg CreateIngredientParams) (Ingredient, error) {
 	row := q.db.QueryRow(ctx, createIngredient,
@@ -249,12 +254,10 @@ SELECT
   id, creator_id, name, unit, storage_loc, ingredient_type, image_path
 FROM
   Ingredients
-WHERE
-  name = $1
 `
 
-func (q *Queries) GetIngredients(ctx context.Context, name string) ([]Ingredient, error) {
-	rows, err := q.db.Query(ctx, getIngredients, name)
+func (q *Queries) GetIngredients(ctx context.Context) ([]Ingredient, error) {
+	rows, err := q.db.Query(ctx, getIngredients)
 	if err != nil {
 		return nil, err
 	}

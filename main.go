@@ -52,7 +52,8 @@ func main() {
 		log.Fatal("Error connecting to the database: ", err)
 		os.Exit(1)
 	}
-	pgxdecimal.Register(conn.TypeMap())
+	pgxdecimal.Register(conn.TypeMap()) // register so we can use decimal package
+
 	defer conn.Close(ctx)
 
 	queries = db.New(conn)

@@ -246,8 +246,7 @@ INSERT INTO
     ingredient_id,
     quantity,
     price,
-    expiration_date,
-    last_modified
+    expiration_date
   )
 VALUES
   (
@@ -255,8 +254,7 @@ VALUES
     $2,
     $3,
     $4,
-    $5,
-    $6
+    $5
   )
 RETURNING
   id, user_id, ingredient_id, quantity, price, expiration_date, last_modified
@@ -268,7 +266,6 @@ type CreateUserItemParams struct {
 	Quantity       decimal.Decimal
 	Price          decimal.NullDecimal
 	ExpirationDate pgtype.Timestamp
-	LastModified   pgtype.Timestamp
 }
 
 func (q *Queries) CreateUserItem(ctx context.Context, arg CreateUserItemParams) (Useritem, error) {
@@ -278,7 +275,6 @@ func (q *Queries) CreateUserItem(ctx context.Context, arg CreateUserItemParams) 
 		arg.Quantity,
 		arg.Price,
 		arg.ExpirationDate,
-		arg.LastModified,
 	)
 	var i Useritem
 	err := row.Scan(
@@ -478,11 +474,11 @@ FROM
 WHERE
   (
     $1::uuid IS NOT NULL
-    AND id = $1::uuid
+    AND user_id = $1::uuid
   )
   OR (
     $2::text IS NOT NULL
-    AND email = $2::text
+    AND user_email = $2::text
   )
 `
 
@@ -491,16 +487,27 @@ type GetUserPantryParams struct {
 	Email  pgtype.Text
 }
 
+type GetUserPantryRow struct {
+	UserMeasurementSystem MeasureType
+	IngredientName        string
+	Quantity              decimal.Decimal
+	ExpirationDate        pgtype.Timestamp
+	Unit                  UnitType
+	StorageLoc            LocType
+	IngredientType        GrocType
+	LastModified          pgtype.Timestamp
+}
+
 // select by either id or email
-func (q *Queries) GetUserPantry(ctx context.Context, arg GetUserPantryParams) ([]Userpantryview, error) {
+func (q *Queries) GetUserPantry(ctx context.Context, arg GetUserPantryParams) ([]GetUserPantryRow, error) {
 	rows, err := q.db.Query(ctx, getUserPantry, arg.UserID, arg.Email)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Userpantryview
+	var items []GetUserPantryRow
 	for rows.Next() {
-		var i Userpantryview
+		var i GetUserPantryRow
 		if err := rows.Scan(
 			&i.UserMeasurementSystem,
 			&i.IngredientName,

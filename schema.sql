@@ -104,6 +104,8 @@ FROM
 CREATE VIEW
   UserPantryView AS
 SELECT
+  u.id AS user_id,
+  u.email AS user_email,
   u.pref_measure AS user_measurement_system,
   i.name AS ingredient_name,
   ui.quantity,

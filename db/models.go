@@ -255,6 +255,8 @@ type Useritem struct {
 }
 
 type Userpantryview struct {
+	UserID                pgtype.UUID
+	UserEmail             string
 	UserMeasurementSystem MeasureType
 	IngredientName        string
 	Quantity              decimal.Decimal

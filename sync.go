@@ -42,7 +42,7 @@ func pull(c *gin.Context) {
 	}
 
 	if items == nil {
-		items = []db.Userpantryview{}
+		items = []db.GetUserPantryRow{}
 	}
 
 	c.JSON(200, gin.H{

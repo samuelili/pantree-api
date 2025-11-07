@@ -32,7 +32,7 @@ func _handleGetPantry(c *gin.Context) {
 	}
 
 	if pantry == nil {
-		pantry = []db.Userpantryview{}
+		pantry = []db.GetUserPantryRow{}
 	}
 
 	c.JSON(200, pantry)

@@ -199,8 +199,7 @@ INSERT INTO
     ingredient_id,
     quantity,
     price,
-    expiration_date,
-    last_modified
+    expiration_date
   )
 VALUES
   (
@@ -208,8 +207,7 @@ VALUES
     sqlc.arg ('ingredient_id'),
     sqlc.arg ('quantity'),
     sqlc.arg ('price'),
-    sqlc.narg ('expiration_date'),
-    sqlc.narg ('last_modified')
+    sqlc.narg ('expiration_date')
   )
 RETURNING
   *;
@@ -230,9 +228,9 @@ FROM
 WHERE
   (
     sqlc.narg ('user_id')::uuid IS NOT NULL
-    AND id = sqlc.narg ('user_id')::uuid
+    AND user_id = sqlc.narg ('user_id')::uuid
   )
   OR (
     sqlc.narg ('email')::text IS NOT NULL
-    AND email = sqlc.narg ('email')::text
+    AND user_email = sqlc.narg ('email')::text
   );

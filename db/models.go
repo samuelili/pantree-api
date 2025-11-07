@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/shopspring/decimal"
 )
 
 type GrocType string
@@ -213,15 +214,15 @@ type Recipe struct {
 	Description pgtype.Text
 	Steps       []string
 	Allergens   []string
-	CookingTime pgtype.Numeric
-	ServingSize pgtype.Numeric
+	CookingTime decimal.Decimal
+	ServingSize decimal.Decimal
 	ImagePath   pgtype.Text
 }
 
 type Recipeingredient struct {
 	RecipeID          pgtype.UUID
 	IngredientID      pgtype.UUID
-	Quantity          pgtype.Numeric
+	Quantity          decimal.Decimal
 	AuthorUnitType    UnitType
 	AuthorMeasureType MeasureType
 }
@@ -231,7 +232,7 @@ type Recipeingredientsview struct {
 	Unit           UnitType
 	StorageLoc     LocType
 	IngredientType GrocType
-	Quantity       pgtype.Numeric
+	Quantity       decimal.Decimal
 	RecipeID       pgtype.UUID
 }
 
@@ -247,17 +248,19 @@ type Useritem struct {
 	ID             pgtype.UUID
 	UserID         pgtype.UUID
 	IngredientID   pgtype.UUID
-	Quantity       pgtype.Numeric
-	Price          pgtype.Numeric
-	ExpirationDate pgtype.Date
+	Quantity       decimal.Decimal
+	Price          decimal.NullDecimal
+	ExpirationDate pgtype.Timestamp
+	LastModified   pgtype.Timestamp
 }
 
 type Userpantryview struct {
 	UserMeasurementSystem MeasureType
 	IngredientName        string
-	Quantity              pgtype.Numeric
-	ExpirationDate        pgtype.Date
+	Quantity              decimal.Decimal
+	ExpirationDate        pgtype.Timestamp
 	Unit                  UnitType
 	StorageLoc            LocType
 	IngredientType        GrocType
+	LastModified          pgtype.Timestamp
 }

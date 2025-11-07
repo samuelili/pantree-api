@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/shopspring/decimal"
 
 	"pantree/api/db"
 
@@ -74,19 +75,17 @@ func createRecipe(c *gin.Context) {
 		}
 	}
 
-	newRecipe.CookingTime, err = getPgtypeNumeric(request.CookingTime)
+	newRecipe.CookingTime, err = decimal.NewFromString(request.CookingTime)
 	if err != nil {
 		sendError(c, http.StatusBadRequest, err, "Invalid cooking time")
 		return
 	}
-	newRecipe.CookingTime.Valid = true
 
-	newRecipe.ServingSize, err = getPgtypeNumeric(request.ServingSize)
+	newRecipe.ServingSize, err = decimal.NewFromString(request.ServingSize)
 	if err != nil {
 		sendError(c, http.StatusBadRequest, err, "Invalid serving size")
 		return
 	}
-	newRecipe.ServingSize.Valid = true
 
 	ctx := c.Request.Context()
 
@@ -127,12 +126,11 @@ func createRecipe(c *gin.Context) {
 		}
 		recipeIngredient.IngredientID.Valid = true
 
-		recipeIngredient.Quantity, err = getPgtypeNumeric(ingredient.Quantity)
+		recipeIngredient.Quantity, err = decimal.NewFromString(ingredient.Quantity)
 		if err != nil {
 			sendError(c, http.StatusBadRequest, err, "Invalid Quantity")
 			return
 		}
-		recipeIngredient.Quantity.Valid = true
 
 		_, err = qtx.CreateRecipeIngredient(ctx, recipeIngredient)
 		if err != nil {

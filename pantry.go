@@ -5,6 +5,8 @@ import (
 	"pantree/api/db"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 /**
@@ -36,58 +38,62 @@ func _handleGetPantry(c *gin.Context) {
 	c.JSON(200, pantry)
 }
 
-// /**
-//  * /newIngredient
-//  */
-// type NewIngredientRequest struct {
-// 	Name           string      `json:"name" binding:"required"`
-// 	Unit           db.UnitType `json:"unit" binding:"required"`
-// 	StorageLoc     db.LocType  `json:"storageLoc" binding:"required"`
-// 	IngredientType db.GrocType `json:"ingredientType" binding:"required"`
-// 	ImagePath      string      `json:"imagePath"`
-// }
+/**
+ * /createItem
+ */
+type CreateUserItemRequest struct {
+	IngredientId   uuid.UUID `json:"ingredientId" binding:"required"`
+	Quantity       int64     `json:"quantity" binding:"required"`
+	Price          *float64  `json:"price"`
+	ExpirationDate *float64  `json:"expirationDate"`
+}
 
-// func _handleAddPantryItem(c *gin.Context) {
-// 	userUuid, err := getUserId(c)
+func _handleAddUserItem(c *gin.Context) {
+	userUuid, err := getUserId(c)
 
-// 	if err != nil {
-// 		log.Println("Unable to get user UUID: \n", err)
-// 	}
+	if err != nil {
+		log.Println("Unable to get user UUID: \n", err)
+		return
+	}
 
-// 	var request NewIngredientRequest
-// 	if err := c.BindJSON(&request); err != nil {
-// 		log.Println("Invalid request body: \n", err)
-// 		c.JSON(400, gin.H{
-// 			"message": "Invalid request body.",
-// 		})
-// 		return
-// 	}
+	var request CreateUserItemRequest
+	if err := c.BindJSON(&request); err != nil {
+		log.Println("Invalid request body: \n", err)
+		sendError(c, 400, err, "Invalid request body.")
+		return
+	}
 
-// 	log.Printf("Creating new ingredient for user %s\n", userUuid)
+	log.Printf("Creating new user item for user %s\n", userUuid)
 
-// 	newIngredient, err := queries.CreateIngredient(c, db.CreateIngredientParams{
-// 		UserID:         getPgtypeUuid(userUuid),
-// 		Name:           request.Name,
-// 		Unit:           request.Unit,
-// 		StorageLoc:     request.StorageLoc,
-// 		IngredientType: request.IngredientType,
-// 		ImagePath:      getPgtypeText(request.ImagePath),
-// 	})
+	// create quantity
+	quantity := decimal.NewFromInt(request.Quantity)
 
-// 	if err != nil {
-// 		log.Println("Could not create ingredient: ", err)
-// 		c.JSON(500, gin.H{
-// 			"message": "Could not create ingredient.",
-// 		})
-// 		return
-// 	}
+	var price decimal.NullDecimal
+	if request.Price != nil {
+		price.Decimal = decimal.NewFromFloat(*request.Price)
+		price.Valid = true
+	}
 
-// 	log.Printf("Successfully created ingredient: %v\n", newIngredient)
-// 	c.JSON(200, newIngredient)
-// }
+	item, err := queries.CreateUserItem(c, db.CreateUserItemParams{
+		UserID:       getPgtypeUuid(userUuid),
+		IngredientID: getPgtypeUuid(request.IngredientId),
+		Quantity:     quantity,
+		Price:        price,
+	})
+
+	if err != nil {
+		log.Println("Could not create user item: ", err)
+		sendError(c, 500, err, "Could not create user item.")
+		return
+	}
+
+	log.Printf("Successfully created user item: %v\n", item.ID)
+	c.JSON(200, item)
+}
 
 func registerPantryRoutes(router *gin.RouterGroup) {
 	router.GET("/getPantry", _handleGetPantry)
+	router.POST("/createItem", _handleAddUserItem)
 	// router.GET("/getEntries", _handleGetIngredients)
 	// router.POST("/newIngredient", _handleNewIngredient)
 }

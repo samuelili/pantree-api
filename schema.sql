@@ -50,7 +50,7 @@ CREATE TABLE
     recipe_id UUID REFERENCES Recipes (id),
     PRIMARY KEY (user_id, recipe_id)
   );
-  
+
 -- recipe -> ingredients link table
 CREATE TABLE
   RecipeIngredients (
@@ -82,7 +82,8 @@ CREATE TABLE
     ingredient_id UUID REFERENCES Ingredients (id),
     quantity NUMERIC NOT NULL,
     price NUMERIC(1000, 2) CHECK (price > 0),
-    expiration_date DATE
+    expiration_date TIMESTAMP,
+    last_modified TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 
 -- recipe ingredients view
@@ -109,7 +110,8 @@ SELECT
   ui.expiration_date,
   i.unit,
   i.storage_loc,
-  i.ingredient_type
+  i.ingredient_type,
+  ui.last_modified
 FROM
   Users u
   JOIN UserItems ui ON u.id = ui.user_id

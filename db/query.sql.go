@@ -9,16 +9,16 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/shopspring/decimal"
 )
 
 const addFavorite = `-- name: AddFavorite :exec
-INSERT INTO Favorites (
+INSERT INTO
+  Favorites (user_id, recipe_id)
+VALUES
+  ($1, $2)
+RETURNING
   user_id, recipe_id
-) VALUES (
-  $1,
-  $2
-)
-RETURNING user_id, recipe_id
 `
 
 type AddFavoriteParams struct {
@@ -32,18 +32,26 @@ func (q *Queries) AddFavorite(ctx context.Context, arg AddFavoriteParams) error 
 }
 
 const createIngredient = `-- name: CreateIngredient :one
-
-INSERT INTO Ingredients (
-  creator_id, name, unit, storage_loc, ingredient_type, image_path
-) VALUES (
-  $1,
-  $2, 
-  $3, 
-  $4, 
-  $5, 
-  $6
-)
-RETURNING id, creator_id, name, unit, storage_loc, ingredient_type, image_path
+INSERT INTO
+  Ingredients (
+    creator_id,
+    name,
+    unit,
+    storage_loc,
+    ingredient_type,
+    image_path
+  )
+VALUES
+  (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6
+  )
+RETURNING
+  id, creator_id, name, unit, storage_loc, ingredient_type, image_path
 `
 
 type CreateIngredientParams struct {
@@ -83,21 +91,32 @@ func (q *Queries) CreateIngredient(ctx context.Context, arg CreateIngredientPara
 }
 
 const createRecipe = `-- name: CreateRecipe :one
-INSERT INTO Recipes (
-  creator_id, date_created, name, description, steps, 
-  allergens, cooking_time, serving_size, image_path  
-) VALUES (
-  $1, 
-  CURRENT_DATE, 
-  $2, 
-  $3, 
-  $4,
-  $5,
-  $6,
-  $7,
-  $8
-)
-RETURNING id, creator_id, date_created, name, description, steps, allergens, cooking_time, serving_size, image_path
+INSERT INTO
+  Recipes (
+    creator_id,
+    date_created,
+    name,
+    description,
+    steps,
+    allergens,
+    cooking_time,
+    serving_size,
+    image_path
+  )
+VALUES
+  (
+    $1,
+    CURRENT_DATE,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8
+  )
+RETURNING
+  id, creator_id, date_created, name, description, steps, allergens, cooking_time, serving_size, image_path
 `
 
 type CreateRecipeParams struct {
@@ -106,8 +125,8 @@ type CreateRecipeParams struct {
 	Description pgtype.Text
 	Steps       []string
 	Allergens   []string
-	CookingTime pgtype.Numeric
-	ServingSize pgtype.Numeric
+	CookingTime decimal.Decimal
+	ServingSize decimal.Decimal
 	ImagePath   pgtype.Text
 }
 
@@ -163,7 +182,7 @@ RETURNING
 type CreateRecipeIngredientParams struct {
 	RecipeID          pgtype.UUID
 	IngredientID      pgtype.UUID
-	Quantity          pgtype.Numeric
+	Quantity          decimal.Decimal
 	AuthorUnitType    UnitType
 	AuthorMeasureType MeasureType
 }
@@ -216,6 +235,60 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Name,
 		&i.DateJoined,
 		&i.PrefMeasure,
+	)
+	return i, err
+}
+
+const createUserItem = `-- name: CreateUserItem :one
+INSERT INTO
+  UserItems (
+    user_id,
+    ingredient_id,
+    quantity,
+    price,
+    expiration_date,
+    last_modified
+  )
+VALUES
+  (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6
+  )
+RETURNING
+  id, user_id, ingredient_id, quantity, price, expiration_date, last_modified
+`
+
+type CreateUserItemParams struct {
+	UserID         pgtype.UUID
+	IngredientID   pgtype.UUID
+	Quantity       decimal.Decimal
+	Price          decimal.NullDecimal
+	ExpirationDate pgtype.Timestamp
+	LastModified   pgtype.Timestamp
+}
+
+func (q *Queries) CreateUserItem(ctx context.Context, arg CreateUserItemParams) (Useritem, error) {
+	row := q.db.QueryRow(ctx, createUserItem,
+		arg.UserID,
+		arg.IngredientID,
+		arg.Quantity,
+		arg.Price,
+		arg.ExpirationDate,
+		arg.LastModified,
+	)
+	var i Useritem
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.IngredientID,
+		&i.Quantity,
+		&i.Price,
+		&i.ExpirationDate,
+		&i.LastModified,
 	)
 	return i, err
 }
@@ -398,7 +471,8 @@ SELECT
   expiration_date,
   unit,
   storage_loc,
-  ingredient_type
+  ingredient_type,
+  last_modified
 FROM
   UserPantryView
 WHERE
@@ -435,6 +509,7 @@ func (q *Queries) GetUserPantry(ctx context.Context, arg GetUserPantryParams) ([
 			&i.Unit,
 			&i.StorageLoc,
 			&i.IngredientType,
+			&i.LastModified,
 		); err != nil {
 			return nil, err
 		}
@@ -485,10 +560,10 @@ func (q *Queries) ListRecipes(ctx context.Context) ([]Recipe, error) {
 }
 
 const removeFavorite = `-- name: RemoveFavorite :exec
-DELETE FROM 
-  Favorites 
-WHERE 
-  user_id = $1 AND recipe_id = $2
+DELETE FROM Favorites
+WHERE
+  user_id = $1
+  AND recipe_id = $2
 `
 
 type RemoveFavoriteParams struct {
@@ -513,9 +588,10 @@ SET
   cooking_time = COALESCE($7, cooking_time),
   serving_size = COALESCE($8, serving_size),
   image_path = COALESCE($9, image_path)
-WHERE 
+WHERE
   id = $10
-RETURNING id, creator_id, date_created, name, description, steps, allergens, cooking_time, serving_size, image_path
+RETURNING
+  id, creator_id, date_created, name, description, steps, allergens, cooking_time, serving_size, image_path
 `
 
 type UpdateRecipeParams struct {
@@ -525,8 +601,8 @@ type UpdateRecipeParams struct {
 	Description pgtype.Text
 	Steps       []string
 	Allergens   []string
-	CookingTime pgtype.Numeric
-	ServingSize pgtype.Numeric
+	CookingTime decimal.NullDecimal
+	ServingSize decimal.NullDecimal
 	ImagePath   pgtype.Text
 	ID          pgtype.UUID
 }

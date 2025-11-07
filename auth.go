@@ -12,7 +12,6 @@ import (
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/google/uuid"
 )
@@ -237,13 +236,6 @@ func getUserId(c *gin.Context) (uuid.UUID, error) {
 	}
 
 	return parsedUuid, nil
-}
-
-func getPgtypeUuid(uuid uuid.UUID) pgtype.UUID {
-	return pgtype.UUID{
-		Bytes: uuid,
-		Valid: true,
-	}
 }
 
 func registerAuth(engine *gin.Engine) *jwt.GinJWTMiddleware {

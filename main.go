@@ -10,6 +10,8 @@ import (
 
 	"pantree/api/db"
 
+	pgxdecimal "github.com/jackc/pgx-shopspring-decimal"
+
 	"github.com/jackc/pgx/v5"
 
 	"github.com/gin-gonic/gin"
@@ -50,6 +52,7 @@ func main() {
 		log.Fatal("Error connecting to the database: ", err)
 		os.Exit(1)
 	}
+	pgxdecimal.Register(conn.TypeMap())
 	defer conn.Close(ctx)
 
 	queries = db.New(conn)
@@ -73,6 +76,9 @@ func main() {
 
 	recipes := api.Group("/recipes")
 	registerRecipeRoutes(recipes)
+
+	sync := api.Group("/sync")
+	registerSyncRoutes(sync)
 
 	router.Run(fmt.Sprintf("%s:%s", cfg.Server.Broadcast, cfg.Server.Port))
 }

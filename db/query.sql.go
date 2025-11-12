@@ -459,6 +459,44 @@ func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (User, error) 
 	return i, err
 }
 
+const getUserItems = `-- name: GetUserItems :many
+SELECT
+  id, user_id, ingredient_id, quantity, price, expiration_date, last_modified
+FROM
+  UserItems
+WHERE
+  user_id = $1
+`
+
+// returns user items in the rawest form
+func (q *Queries) GetUserItems(ctx context.Context, userID pgtype.UUID) ([]Useritem, error) {
+	rows, err := q.db.Query(ctx, getUserItems, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Useritem
+	for rows.Next() {
+		var i Useritem
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.IngredientID,
+			&i.Quantity,
+			&i.Price,
+			&i.ExpirationDate,
+			&i.LastModified,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserPantry = `-- name: GetUserPantry :many
 SELECT
   user_measurement_system,

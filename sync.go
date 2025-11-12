@@ -7,8 +7,8 @@ import (
 )
 
 type SyncState struct {
-	items db.Userpantryview `json:"items" binding:"required"`
-	user  db.Useritem       `json:"user"  binding:"required"`
+	Items []db.Useritem `json:"items" binding:"required"`
+	User  db.User       `json:"user"  binding:"required"`
 }
 
 func pull(c *gin.Context) {
@@ -32,9 +32,7 @@ func pull(c *gin.Context) {
 
 	// get items
 
-	items, err := queries.GetUserPantry(c, db.GetUserPantryParams{
-		UserID: getPgtypeUuid(userUuid),
-	})
+	items, err := queries.GetUserItems(c, getPgtypeUuid(userUuid))
 
 	if err != nil {
 		sendError(c, 500, err, "Could not get pantry items")
@@ -42,13 +40,14 @@ func pull(c *gin.Context) {
 	}
 
 	if items == nil {
-		items = []db.GetUserPantryRow{}
+		items = []db.Useritem{}
 	}
 
-	c.JSON(200, gin.H{
-		"items": items,
-		"user":  user,
-	})
+	var syncState SyncState
+	syncState.Items = items
+	syncState.User = user
+
+	c.JSON(200, syncState)
 }
 
 func registerSyncRoutes(router *gin.RouterGroup) {

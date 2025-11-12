@@ -212,6 +212,15 @@ VALUES
 RETURNING
   *;
 
+-- returns user items in the rawest form
+-- name: GetUserItems :many
+SELECT
+  *
+FROM
+  UserItems
+WHERE
+  user_id = sqlc.arg('user_id');
+
 -- select by either id or email
 -- name: GetUserPantry :many
 SELECT

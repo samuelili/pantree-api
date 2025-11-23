@@ -62,9 +62,9 @@ func main() {
 
 	middleware := registerAuth(router)
 
-	router.GET("/bing", bing)
-
 	api := router.Group("/api", middleware.MiddlewareFunc())
+
+	api.GET("/bing", bing)
 
 	users := api.Group("/users")
 	registerUserRoutes(users)

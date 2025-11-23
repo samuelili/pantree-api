@@ -25,7 +25,8 @@ CREATE TABLE
     email TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
     date_joined DATE NOT NULL,
-    pref_measure MEASURE_TYPE NOT NULL DEFAULT 'metric'
+    pref_measure MEASURE_TYPE NOT NULL DEFAULT 'metric',
+    last_modified TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 
 -- recipes

@@ -21,7 +21,7 @@ func _handleGetPantry(c *gin.Context) {
 
 	log.Printf("Getting pantry for user %s\n", userUuid)
 	pantry, err := queries.GetUserPantry(c, db.GetUserPantryParams{
-		UserID: getPgtypeUuid(userUuid),
+		UserID: &userUuid,
 	})
 
 	if err != nil {
@@ -75,8 +75,8 @@ func _handleAddUserItem(c *gin.Context) {
 	}
 
 	item, err := queries.CreateUserItem(c, db.CreateUserItemParams{
-		UserID:       getPgtypeUuid(userUuid),
-		IngredientID: getPgtypeUuid(request.IngredientId),
+		UserID:       &userUuid,
+		IngredientID: &request.IngredientId,
 		Quantity:     quantity,
 		Price:        price,
 	})

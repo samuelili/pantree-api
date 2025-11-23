@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 )
@@ -22,8 +23,8 @@ RETURNING
 `
 
 type AddFavoriteParams struct {
-	UserID   pgtype.UUID
-	RecipeID pgtype.UUID
+	UserID   uuid.UUID `json:"userId"`
+	RecipeID uuid.UUID `json:"recipeId"`
 }
 
 func (q *Queries) AddFavorite(ctx context.Context, arg AddFavoriteParams) error {
@@ -55,12 +56,12 @@ RETURNING
 `
 
 type CreateIngredientParams struct {
-	CreatorID      pgtype.UUID
-	Name           string
-	Unit           UnitType
-	StorageLoc     LocType
-	IngredientType GrocType
-	ImagePath      pgtype.Text
+	CreatorID      *uuid.UUID  `json:"creatorId"`
+	Name           string      `json:"name"`
+	Unit           UnitType    `json:"unit"`
+	StorageLoc     LocType     `json:"storageLoc"`
+	IngredientType GrocType    `json:"ingredientType"`
+	ImagePath      pgtype.Text `json:"imagePath"`
 }
 
 // WHERE
@@ -120,14 +121,14 @@ RETURNING
 `
 
 type CreateRecipeParams struct {
-	CreatorID   pgtype.UUID
-	Name        string
-	Description pgtype.Text
-	Steps       []string
-	Allergens   []string
-	CookingTime decimal.Decimal
-	ServingSize decimal.Decimal
-	ImagePath   pgtype.Text
+	CreatorID   *uuid.UUID      `json:"creatorId"`
+	Name        string          `json:"name"`
+	Description pgtype.Text     `json:"description"`
+	Steps       []string        `json:"steps"`
+	Allergens   []string        `json:"allergens"`
+	CookingTime decimal.Decimal `json:"cookingTime"`
+	ServingSize decimal.Decimal `json:"servingSize"`
+	ImagePath   pgtype.Text     `json:"imagePath"`
 }
 
 // date created is current date
@@ -180,11 +181,11 @@ RETURNING
 `
 
 type CreateRecipeIngredientParams struct {
-	RecipeID          pgtype.UUID
-	IngredientID      pgtype.UUID
-	Quantity          decimal.Decimal
-	AuthorUnitType    UnitType
-	AuthorMeasureType MeasureType
+	RecipeID          uuid.UUID       `json:"recipeId"`
+	IngredientID      uuid.UUID       `json:"ingredientId"`
+	Quantity          decimal.Decimal `json:"quantity"`
+	AuthorUnitType    UnitType        `json:"authorUnitType"`
+	AuthorMeasureType MeasureType     `json:"authorMeasureType"`
 }
 
 func (q *Queries) CreateRecipeIngredient(ctx context.Context, arg CreateRecipeIngredientParams) (Recipeingredient, error) {
@@ -217,13 +218,13 @@ VALUES
     $3
   )
 RETURNING
-  id, email, name, date_joined, pref_measure
+  id, email, name, date_joined, pref_measure, last_modified
 `
 
 type CreateUserParams struct {
-	Email       string
-	Name        string
-	PrefMeasure MeasureType
+	Email       string      `json:"email"`
+	Name        string      `json:"name"`
+	PrefMeasure MeasureType `json:"prefMeasure"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -235,6 +236,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Name,
 		&i.DateJoined,
 		&i.PrefMeasure,
+		&i.LastModified,
 	)
 	return i, err
 }
@@ -261,11 +263,11 @@ RETURNING
 `
 
 type CreateUserItemParams struct {
-	UserID         pgtype.UUID
-	IngredientID   pgtype.UUID
-	Quantity       decimal.Decimal
-	Price          decimal.NullDecimal
-	ExpirationDate pgtype.Timestamp
+	UserID         *uuid.UUID          `json:"userId"`
+	IngredientID   *uuid.UUID          `json:"ingredientId"`
+	Quantity       decimal.Decimal     `json:"quantity"`
+	Price          decimal.NullDecimal `json:"price"`
+	ExpirationDate pgtype.Timestamp    `json:"expirationDate"`
 }
 
 func (q *Queries) CreateUserItem(ctx context.Context, arg CreateUserItemParams) (Useritem, error) {
@@ -298,15 +300,15 @@ WHERE
   user_id = $1
 `
 
-func (q *Queries) GetFavorites(ctx context.Context, userID pgtype.UUID) ([]pgtype.UUID, error) {
+func (q *Queries) GetFavorites(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
 	rows, err := q.db.Query(ctx, getFavorites, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []pgtype.UUID
+	var items []uuid.UUID
 	for rows.Next() {
-		var recipe_id pgtype.UUID
+		var recipe_id uuid.UUID
 		if err := rows.Scan(&recipe_id); err != nil {
 			return nil, err
 		}
@@ -364,7 +366,7 @@ LIMIT
   1
 `
 
-func (q *Queries) GetRecipe(ctx context.Context, id pgtype.UUID) (Recipe, error) {
+func (q *Queries) GetRecipe(ctx context.Context, id uuid.UUID) (Recipe, error) {
 	row := q.db.QueryRow(ctx, getRecipe, id)
 	var i Recipe
 	err := row.Scan(
@@ -397,7 +399,7 @@ WHERE
 `
 
 // $1: recipe_id
-func (q *Queries) GetRecipeIngredients(ctx context.Context, recipeID pgtype.UUID) ([]Recipeingredientsview, error) {
+func (q *Queries) GetRecipeIngredients(ctx context.Context, recipeID uuid.UUID) ([]Recipeingredientsview, error) {
 	rows, err := q.db.Query(ctx, getRecipeIngredients, recipeID)
 	if err != nil {
 		return nil, err
@@ -426,7 +428,7 @@ func (q *Queries) GetRecipeIngredients(ctx context.Context, recipeID pgtype.UUID
 
 const getUser = `-- name: GetUser :one
 SELECT
-  id, email, name, date_joined, pref_measure
+  id, email, name, date_joined, pref_measure, last_modified
 FROM
   Users u
 WHERE
@@ -441,8 +443,8 @@ WHERE
 `
 
 type GetUserParams struct {
-	ID    pgtype.UUID
-	Email pgtype.Text
+	ID    *uuid.UUID  `json:"id"`
+	Email pgtype.Text `json:"email"`
 }
 
 // select by either id or email
@@ -455,6 +457,7 @@ func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (User, error) 
 		&i.Name,
 		&i.DateJoined,
 		&i.PrefMeasure,
+		&i.LastModified,
 	)
 	return i, err
 }
@@ -469,7 +472,7 @@ WHERE
 `
 
 // returns user items in the rawest form
-func (q *Queries) GetUserItems(ctx context.Context, userID pgtype.UUID) ([]Useritem, error) {
+func (q *Queries) GetUserItems(ctx context.Context, userID *uuid.UUID) ([]Useritem, error) {
 	rows, err := q.db.Query(ctx, getUserItems, userID)
 	if err != nil {
 		return nil, err
@@ -521,19 +524,19 @@ WHERE
 `
 
 type GetUserPantryParams struct {
-	UserID pgtype.UUID
-	Email  pgtype.Text
+	UserID *uuid.UUID  `json:"userId"`
+	Email  pgtype.Text `json:"email"`
 }
 
 type GetUserPantryRow struct {
-	UserMeasurementSystem MeasureType
-	IngredientName        string
-	Quantity              decimal.Decimal
-	ExpirationDate        pgtype.Timestamp
-	Unit                  UnitType
-	StorageLoc            LocType
-	IngredientType        GrocType
-	LastModified          pgtype.Timestamp
+	UserMeasurementSystem MeasureType      `json:"userMeasurementSystem"`
+	IngredientName        string           `json:"ingredientName"`
+	Quantity              decimal.Decimal  `json:"quantity"`
+	ExpirationDate        pgtype.Timestamp `json:"expirationDate"`
+	Unit                  UnitType         `json:"unit"`
+	StorageLoc            LocType          `json:"storageLoc"`
+	IngredientType        GrocType         `json:"ingredientType"`
+	LastModified          pgtype.Timestamp `json:"lastModified"`
 }
 
 // select by either id or email
@@ -612,8 +615,8 @@ WHERE
 `
 
 type RemoveFavoriteParams struct {
-	UserID   pgtype.UUID
-	RecipeID pgtype.UUID
+	UserID   uuid.UUID `json:"userId"`
+	RecipeID uuid.UUID `json:"recipeId"`
 }
 
 func (q *Queries) RemoveFavorite(ctx context.Context, arg RemoveFavoriteParams) error {
@@ -640,16 +643,16 @@ RETURNING
 `
 
 type UpdateRecipeParams struct {
-	CreatorID   pgtype.UUID
-	DateCreated pgtype.Date
-	Name        pgtype.Text
-	Description pgtype.Text
-	Steps       []string
-	Allergens   []string
-	CookingTime decimal.NullDecimal
-	ServingSize decimal.NullDecimal
-	ImagePath   pgtype.Text
-	ID          pgtype.UUID
+	CreatorID   *uuid.UUID          `json:"creatorId"`
+	DateCreated pgtype.Date         `json:"dateCreated"`
+	Name        pgtype.Text         `json:"name"`
+	Description pgtype.Text         `json:"description"`
+	Steps       []string            `json:"steps"`
+	Allergens   []string            `json:"allergens"`
+	CookingTime decimal.NullDecimal `json:"cookingTime"`
+	ServingSize decimal.NullDecimal `json:"servingSize"`
+	ImagePath   pgtype.Text         `json:"imagePath"`
+	ID          uuid.UUID           `json:"id"`
 }
 
 // all fields are optional except for id
@@ -682,15 +685,15 @@ SET
 WHERE
   id = $5
 RETURNING
-  id, email, name, date_joined, pref_measure
+  id, email, name, date_joined, pref_measure, last_modified
 `
 
 type UpdateUserParams struct {
-	Email       pgtype.Text
-	Name        pgtype.Text
-	DateJoined  pgtype.Date
-	PrefMeasure NullMeasureType
-	ID          pgtype.UUID
+	Email       pgtype.Text     `json:"email"`
+	Name        pgtype.Text     `json:"name"`
+	DateJoined  pgtype.Date     `json:"dateJoined"`
+	PrefMeasure NullMeasureType `json:"prefMeasure"`
+	ID          uuid.UUID       `json:"id"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {

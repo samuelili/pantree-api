@@ -5,6 +5,7 @@ import (
 
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 
@@ -61,7 +62,7 @@ func createRecipe(c *gin.Context) {
 	userUuid, _ := getUserId(c)
 
 	newRecipe := db.CreateRecipeParams{
-		CreatorID: getPgtypeUuid(userUuid),
+		CreatorID: &userUuid,
 		Name:      request.Name,
 		Steps:     request.Steps,
 		Allergens: request.Allergens,
@@ -119,12 +120,12 @@ func createRecipe(c *gin.Context) {
 			AuthorMeasureType: db.MeasureType(ingredient.AuthorMeasureType),
 		}
 
-		recipeIngredient.IngredientID = pgtype.UUID{}
-		if err := recipeIngredient.IngredientID.Scan(ingredient.Ingredient); err != nil {
+		ingredientId, err := uuid.Parse(ingredient.Ingredient)
+		if err != nil {
 			sendError(c, http.StatusBadRequest, err, "Invalid ingredient UUID")
 			return
 		}
-		recipeIngredient.IngredientID.Valid = true
+		recipeIngredient.IngredientID = ingredientId
 
 		recipeIngredient.Quantity, err = decimal.NewFromString(ingredient.Quantity)
 		if err != nil {

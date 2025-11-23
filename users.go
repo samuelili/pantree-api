@@ -47,10 +47,7 @@ func handleMe(c *gin.Context) {
 
 	log.Printf("Getting user %s\n", userUuid)
 	user, err := queries.GetUser(c, db.GetUserParams{
-		ID: pgtype.UUID{
-			Bytes: userUuid,
-			Valid: true,
-		},
+		ID: &userUuid,
 	})
 
 	if err != nil {
@@ -92,8 +89,9 @@ func handleUpdateMe(c *gin.Context) {
 		return
 	}
 
-	var params db.UpdateUserParams
-	params.ID = getPgtypeUuid(userUuid)
+	var params = db.UpdateUserParams{
+		ID: userUuid,
+	}
 
 	if request.Email != "" {
 		params.Email = pgtype.Text{

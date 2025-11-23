@@ -7,6 +7,8 @@ sql:
       go:
         package: "db"
         out: "db"
+        emit_json_tags: true 
+        json_tags_case_style: "camel"
         sql_package: "pgx/v5"
         overrides:
           # Target all NUMERIC/DECIMAL columns (non-nullable)
@@ -18,11 +20,13 @@ sql:
             nullable: true
             go_type: "github.com/shopspring/decimal.NullDecimal"
             
-          - db_type: "pg_catalog.uuid"
-            go_type: "github.com/google/uuid.UUID"
+          - db_type: "uuid"
+            go_type:
+              import: "github.com/google/uuid"
+              type: "UUID"
 
           # For nullable UUIDs, you can use a pointer to the type:
-          - db_type: "pg_catalog.uuid"
+          - db_type: "uuid"
             nullable: true
             go_type:
               import: "github.com/google/uuid"

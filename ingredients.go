@@ -58,7 +58,7 @@ func _handleNewIngredient(c *gin.Context) {
 	log.Printf("Creating new ingredient for user %s", userUuid)
 
 	newIngredient, err := queries.CreateIngredient(c, db.CreateIngredientParams{
-		CreatorID:      getPgtypeUuid(userUuid),
+		CreatorID:      &userUuid,
 		Name:           request.Name,
 		Unit:           request.Unit,
 		StorageLoc:     request.StorageLoc,

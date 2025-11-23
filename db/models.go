@@ -8,6 +8,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 )
@@ -41,8 +42,8 @@ func (e *GrocType) Scan(src interface{}) error {
 }
 
 type NullGrocType struct {
-	GrocType GrocType
-	Valid    bool // Valid is true if GrocType is not NULL
+	GrocType GrocType `json:"grocType"`
+	Valid    bool     `json:"valid"` // Valid is true if GrocType is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -84,8 +85,8 @@ func (e *LocType) Scan(src interface{}) error {
 }
 
 type NullLocType struct {
-	LocType LocType
-	Valid   bool // Valid is true if LocType is not NULL
+	LocType LocType `json:"locType"`
+	Valid   bool    `json:"valid"` // Valid is true if LocType is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -126,8 +127,8 @@ func (e *MeasureType) Scan(src interface{}) error {
 }
 
 type NullMeasureType struct {
-	MeasureType MeasureType
-	Valid       bool // Valid is true if MeasureType is not NULL
+	MeasureType MeasureType `json:"measureType"`
+	Valid       bool        `json:"valid"` // Valid is true if MeasureType is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -169,8 +170,8 @@ func (e *UnitType) Scan(src interface{}) error {
 }
 
 type NullUnitType struct {
-	UnitType UnitType
-	Valid    bool // Valid is true if UnitType is not NULL
+	UnitType UnitType `json:"unitType"`
+	Valid    bool     `json:"valid"` // Valid is true if UnitType is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -192,77 +193,78 @@ func (ns NullUnitType) Value() (driver.Value, error) {
 }
 
 type Favorite struct {
-	UserID   pgtype.UUID
-	RecipeID pgtype.UUID
+	UserID   uuid.UUID `json:"userId"`
+	RecipeID uuid.UUID `json:"recipeId"`
 }
 
 type Ingredient struct {
-	ID             pgtype.UUID
-	CreatorID      pgtype.UUID
-	Name           string
-	Unit           UnitType
-	StorageLoc     LocType
-	IngredientType GrocType
-	ImagePath      pgtype.Text
+	ID             uuid.UUID   `json:"id"`
+	CreatorID      *uuid.UUID  `json:"creatorId"`
+	Name           string      `json:"name"`
+	Unit           UnitType    `json:"unit"`
+	StorageLoc     LocType     `json:"storageLoc"`
+	IngredientType GrocType    `json:"ingredientType"`
+	ImagePath      pgtype.Text `json:"imagePath"`
 }
 
 type Recipe struct {
-	ID          pgtype.UUID
-	CreatorID   pgtype.UUID
-	DateCreated pgtype.Date
-	Name        string
-	Description pgtype.Text
-	Steps       []string
-	Allergens   []string
-	CookingTime decimal.Decimal
-	ServingSize decimal.Decimal
-	ImagePath   pgtype.Text
+	ID          uuid.UUID       `json:"id"`
+	CreatorID   *uuid.UUID      `json:"creatorId"`
+	DateCreated pgtype.Date     `json:"dateCreated"`
+	Name        string          `json:"name"`
+	Description pgtype.Text     `json:"description"`
+	Steps       []string        `json:"steps"`
+	Allergens   []string        `json:"allergens"`
+	CookingTime decimal.Decimal `json:"cookingTime"`
+	ServingSize decimal.Decimal `json:"servingSize"`
+	ImagePath   pgtype.Text     `json:"imagePath"`
 }
 
 type Recipeingredient struct {
-	RecipeID          pgtype.UUID
-	IngredientID      pgtype.UUID
-	Quantity          decimal.Decimal
-	AuthorUnitType    UnitType
-	AuthorMeasureType MeasureType
+	RecipeID          uuid.UUID       `json:"recipeId"`
+	IngredientID      uuid.UUID       `json:"ingredientId"`
+	Quantity          decimal.Decimal `json:"quantity"`
+	AuthorUnitType    UnitType        `json:"authorUnitType"`
+	AuthorMeasureType MeasureType     `json:"authorMeasureType"`
 }
 
 type Recipeingredientsview struct {
-	Name           string
-	Unit           UnitType
-	StorageLoc     LocType
-	IngredientType GrocType
-	Quantity       decimal.Decimal
-	RecipeID       pgtype.UUID
+	Name           string          `json:"name"`
+	Unit           UnitType        `json:"unit"`
+	StorageLoc     LocType         `json:"storageLoc"`
+	IngredientType GrocType        `json:"ingredientType"`
+	Quantity       decimal.Decimal `json:"quantity"`
+	RecipeID       uuid.UUID       `json:"recipeId"`
 }
 
 type User struct {
-	ID          pgtype.UUID
-	Email       string
-	Name        string
-	DateJoined  pgtype.Date
-	PrefMeasure MeasureType
+	ID           uuid.UUID        `json:"id"`
+	Email        string           `json:"email"`
+	Name         string           `json:"name"`
+	DateJoined   pgtype.Date      `json:"dateJoined"`
+	PrefMeasure  MeasureType      `json:"prefMeasure"`
+	LastModified pgtype.Timestamp `json:"lastModified"`
 }
 
 type Useritem struct {
-	ID             pgtype.UUID
-	UserID         pgtype.UUID
-	IngredientID   pgtype.UUID
-	Quantity       decimal.Decimal
-	Price          decimal.NullDecimal
-	ExpirationDate pgtype.Timestamp
-	LastModified   pgtype.Timestamp
+	ID             uuid.UUID           `json:"id"`
+	UserID         *uuid.UUID          `json:"userId"`
+	IngredientID   *uuid.UUID          `json:"ingredientId"`
+	Quantity       decimal.Decimal     `json:"quantity"`
+	Price          decimal.NullDecimal `json:"price"`
+	ExpirationDate pgtype.Timestamp    `json:"expirationDate"`
+	LastModified   pgtype.Timestamp    `json:"lastModified"`
 }
 
 type Userpantryview struct {
-	UserID                pgtype.UUID
-	UserEmail             string
-	UserMeasurementSystem MeasureType
-	IngredientName        string
-	Quantity              decimal.Decimal
-	ExpirationDate        pgtype.Timestamp
-	Unit                  UnitType
-	StorageLoc            LocType
-	IngredientType        GrocType
-	LastModified          pgtype.Timestamp
+	UserID                uuid.UUID        `json:"userId"`
+	UserEmail             string           `json:"userEmail"`
+	UserMeasurementSystem MeasureType      `json:"userMeasurementSystem"`
+	IngredientName        string           `json:"ingredientName"`
+	Quantity              decimal.Decimal  `json:"quantity"`
+	ExpirationDate        pgtype.Timestamp `json:"expirationDate"`
+	Unit                  UnitType         `json:"unit"`
+	StorageLoc            LocType          `json:"storageLoc"`
+	IngredientType        GrocType         `json:"ingredientType"`
+	LastModified          pgtype.Timestamp `json:"lastModified"`
 }

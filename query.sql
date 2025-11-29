@@ -229,7 +229,7 @@ RETURNING
 UPDATE
   UserItemEntries
 SET
-  deleted_at = CURRENT_TIMESTAMP,
+  deleted = true,
   last_modified = CURRENT_TIMESTAMP
 WHERE
   id = sqlc.arg ('id');
@@ -252,7 +252,7 @@ INSERT INTO UserItemEntries (
   price,
   expiration_date,
   last_modified,
-  deleted_at
+  deleted
 ) VALUES (
   sqlc.arg('id'),
   sqlc.arg('user_id'),
@@ -261,7 +261,7 @@ INSERT INTO UserItemEntries (
   sqlc.arg('price'),
   sqlc.narg('expiration_date'),
   sqlc.arg('last_modified'),
-  sqlc.narg('deleted_at')
+  sqlc.arg('deleted')
 )
 ON CONFLICT (id) DO UPDATE
 SET
@@ -271,7 +271,7 @@ SET
   price = EXCLUDED.price,
   expiration_date = EXCLUDED.expiration_date,
   last_modified = EXCLUDED.last_modified,
-  deleted_at = EXCLUDED.deleted_at
+  deleted = EXCLUDED.deleted
 WHERE
   EXCLUDED.last_modified > UserItemEntries.last_modified
 RETURNING *;

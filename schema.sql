@@ -85,7 +85,7 @@ CREATE TABLE
     price NUMERIC(1000, 2) CHECK (price > 0),
     expiration_date TIMESTAMP,
     last_modified TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP
+    deleted BOOLEAN NOT NULL DEFAULT false
   );
 
 -- recipe ingredients view
@@ -121,4 +121,4 @@ FROM
   JOIN UserItemEntries ui ON u.id = ui.user_id
   JOIN Ingredients i ON ui.ingredient_id = i.id
 WHERE
-  ui.deleted_at IS NULL;
+  ui.deleted = false;

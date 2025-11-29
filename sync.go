@@ -89,7 +89,16 @@ func sync(c *gin.Context) {
 	}
 
 	for _, item := range request.Items {
-		_, err := queries.UpsertUserItemEntry(c, db.UpsertUserItemEntryParams(item))
+		_, err := queries.UpsertUserItemEntry(c, db.UpsertUserItemEntryParams{
+			ID:             item.ID,
+			UserID:         item.UserID,
+			IngredientID:   item.IngredientID,
+			Quantity:       item.Quantity,
+			Price:          item.Price,
+			ExpirationDate: item.ExpirationDate,
+			LastModified:   item.LastModified,
+			Deleted:        item.Deleted,
+		})
 
 		if err != nil && err != pgx.ErrNoRows {
 			sendError(c, 500, err, "Unable to upsert item")

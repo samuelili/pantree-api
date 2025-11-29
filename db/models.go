@@ -255,7 +255,7 @@ type Useritementry struct {
 	Price          decimal.NullDecimal `json:"price"`
 	ExpirationDate **time.Time         `json:"expirationDate"`
 	LastModified   time.Time           `json:"lastModified"`
-	DeletedAt      **time.Time         `json:"deletedAt"`
+	Deleted        bool                `json:"deleted"`
 }
 
 type Userpantryview struct {

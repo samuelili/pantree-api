@@ -260,7 +260,7 @@ VALUES
     $5
   )
 RETURNING
-  id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted_at
+  id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted
 `
 
 type CreateUserItemEntryParams struct {
@@ -288,7 +288,7 @@ func (q *Queries) CreateUserItemEntry(ctx context.Context, arg CreateUserItemEnt
 		&i.Price,
 		&i.ExpirationDate,
 		&i.LastModified,
-		&i.DeletedAt,
+		&i.Deleted,
 	)
 	return i, err
 }
@@ -297,7 +297,7 @@ const deleteUserItemEntry = `-- name: DeleteUserItemEntry :exec
 UPDATE
   UserItemEntries
 SET
-  deleted_at = CURRENT_TIMESTAMP,
+  deleted = true,
   last_modified = CURRENT_TIMESTAMP
 WHERE
   id = $1
@@ -481,7 +481,7 @@ func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (User, error) 
 
 const getUserItemEntries = `-- name: GetUserItemEntries :many
 SELECT
-  id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted_at
+  id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted
 FROM
   UserItemEntries
 WHERE
@@ -506,7 +506,7 @@ func (q *Queries) GetUserItemEntries(ctx context.Context, userID *uuid.UUID) ([]
 			&i.Price,
 			&i.ExpirationDate,
 			&i.LastModified,
-			&i.DeletedAt,
+			&i.Deleted,
 		); err != nil {
 			return nil, err
 		}
@@ -520,7 +520,7 @@ func (q *Queries) GetUserItemEntries(ctx context.Context, userID *uuid.UUID) ([]
 
 const getUserItemEntriesSinceTime = `-- name: GetUserItemEntriesSinceTime :many
 SELECT
-  id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted_at
+  id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted
 FROM
   UserItemEntries
 WHERE
@@ -550,7 +550,7 @@ func (q *Queries) GetUserItemEntriesSinceTime(ctx context.Context, arg GetUserIt
 			&i.Price,
 			&i.ExpirationDate,
 			&i.LastModified,
-			&i.DeletedAt,
+			&i.Deleted,
 		); err != nil {
 			return nil, err
 		}
@@ -780,7 +780,7 @@ SET
 WHERE
   id = $4
 RETURNING
-  id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted_at
+  id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted
 `
 
 type UpdateUserItemEntryParams struct {
@@ -806,7 +806,7 @@ func (q *Queries) UpdateUserItemEntry(ctx context.Context, arg UpdateUserItemEnt
 		&i.Price,
 		&i.ExpirationDate,
 		&i.LastModified,
-		&i.DeletedAt,
+		&i.Deleted,
 	)
 	return i, err
 }
@@ -820,7 +820,7 @@ INSERT INTO UserItemEntries (
   price,
   expiration_date,
   last_modified,
-  deleted_at
+  deleted
 ) VALUES (
   $1,
   $2,
@@ -839,10 +839,10 @@ SET
   price = EXCLUDED.price,
   expiration_date = EXCLUDED.expiration_date,
   last_modified = EXCLUDED.last_modified,
-  deleted_at = EXCLUDED.deleted_at
+  deleted = EXCLUDED.deleted
 WHERE
   EXCLUDED.last_modified > UserItemEntries.last_modified
-RETURNING id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted_at
+RETURNING id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted
 `
 
 type UpsertUserItemEntryParams struct {
@@ -853,7 +853,7 @@ type UpsertUserItemEntryParams struct {
 	Price          decimal.NullDecimal `json:"price"`
 	ExpirationDate **time.Time         `json:"expirationDate"`
 	LastModified   time.Time           `json:"lastModified"`
-	DeletedAt      **time.Time         `json:"deletedAt"`
+	Deleted        bool                `json:"deleted"`
 }
 
 func (q *Queries) UpsertUserItemEntry(ctx context.Context, arg UpsertUserItemEntryParams) (Useritementry, error) {
@@ -865,7 +865,7 @@ func (q *Queries) UpsertUserItemEntry(ctx context.Context, arg UpsertUserItemEnt
 		arg.Price,
 		arg.ExpirationDate,
 		arg.LastModified,
-		arg.DeletedAt,
+		arg.Deleted,
 	)
 	var i Useritementry
 	err := row.Scan(
@@ -876,7 +876,7 @@ func (q *Queries) UpsertUserItemEntry(ctx context.Context, arg UpsertUserItemEnt
 		&i.Price,
 		&i.ExpirationDate,
 		&i.LastModified,
-		&i.DeletedAt,
+		&i.Deleted,
 	)
 	return i, err
 }

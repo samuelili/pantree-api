@@ -192,9 +192,9 @@ WHERE
     AND u.email = sqlc.narg ('email')::text
   );
 
--- name: CreateUserItem :one
+-- name: CreateUserItemEntry :one
 INSERT INTO
-  UserItems (
+  UserItemEntries (
     user_id,
     ingredient_id,
     quantity,
@@ -212,9 +212,9 @@ VALUES
 RETURNING
   *;
 
--- name: UpdateUserItem :one
+-- name: UpdateUserItemEntry :one
 UPDATE
-  UserItems
+  UserItemEntries
 SET
   quantity = sqlc.arg ('quantity'),
   price = sqlc.arg ('price'),
@@ -225,26 +225,26 @@ WHERE
 RETURNING
   *;
 
--- name: DeleteUserItem :exec
+-- name: DeleteUserItemEntry :exec
 UPDATE
-  UserItems
+  UserItemEntries
 SET
   deleted_at = CURRENT_TIMESTAMP,
   last_modified = CURRENT_TIMESTAMP
 WHERE
   id = sqlc.arg ('id');
 
--- name: GetUserItemsSinceTime :many
+-- name: GetUserItemEntriesSinceTime :many
 SELECT
   *
 FROM
-  UserItems
+  UserItemEntries
 WHERE
   user_id = sqlc.arg('user_id')
   AND last_modified > sqlc.arg('last_modified');
 
--- name: UpsertUserItem :one
-INSERT INTO UserItems (
+-- name: UpsertUserItemEntry :one
+INSERT INTO UserItemEntries (
   id,
   user_id,
   ingredient_id,
@@ -273,15 +273,15 @@ SET
   last_modified = EXCLUDED.last_modified,
   deleted_at = EXCLUDED.deleted_at
 WHERE
-  EXCLUDED.last_modified > UserItems.last_modified
+  EXCLUDED.last_modified > UserItemEntries.last_modified
 RETURNING *;
 
 -- returns user items in the rawest form
--- name: GetUserItems :many
+-- name: GetUserItemEntries :many
 SELECT
   *
 FROM
-  UserItems
+  UserItemEntries
 WHERE
   user_id = sqlc.arg('user_id');
 

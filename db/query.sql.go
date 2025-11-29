@@ -242,9 +242,9 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
-const createUserItem = `-- name: CreateUserItem :one
+const createUserItemEntry = `-- name: CreateUserItemEntry :one
 INSERT INTO
-  UserItems (
+  UserItemEntries (
     user_id,
     ingredient_id,
     quantity,
@@ -263,7 +263,7 @@ RETURNING
   id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted_at
 `
 
-type CreateUserItemParams struct {
+type CreateUserItemEntryParams struct {
 	UserID         *uuid.UUID          `json:"userId"`
 	IngredientID   *uuid.UUID          `json:"ingredientId"`
 	Quantity       decimal.Decimal     `json:"quantity"`
@@ -271,15 +271,15 @@ type CreateUserItemParams struct {
 	ExpirationDate **time.Time         `json:"expirationDate"`
 }
 
-func (q *Queries) CreateUserItem(ctx context.Context, arg CreateUserItemParams) (Useritem, error) {
-	row := q.db.QueryRow(ctx, createUserItem,
+func (q *Queries) CreateUserItemEntry(ctx context.Context, arg CreateUserItemEntryParams) (Useritementry, error) {
+	row := q.db.QueryRow(ctx, createUserItemEntry,
 		arg.UserID,
 		arg.IngredientID,
 		arg.Quantity,
 		arg.Price,
 		arg.ExpirationDate,
 	)
-	var i Useritem
+	var i Useritementry
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -293,9 +293,9 @@ func (q *Queries) CreateUserItem(ctx context.Context, arg CreateUserItemParams) 
 	return i, err
 }
 
-const deleteUserItem = `-- name: DeleteUserItem :exec
+const deleteUserItemEntry = `-- name: DeleteUserItemEntry :exec
 UPDATE
-  UserItems
+  UserItemEntries
 SET
   deleted_at = CURRENT_TIMESTAMP,
   last_modified = CURRENT_TIMESTAMP
@@ -303,8 +303,8 @@ WHERE
   id = $1
 `
 
-func (q *Queries) DeleteUserItem(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteUserItem, id)
+func (q *Queries) DeleteUserItemEntry(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteUserItemEntry, id)
 	return err
 }
 
@@ -479,25 +479,25 @@ func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (User, error) 
 	return i, err
 }
 
-const getUserItems = `-- name: GetUserItems :many
+const getUserItemEntries = `-- name: GetUserItemEntries :many
 SELECT
   id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted_at
 FROM
-  UserItems
+  UserItemEntries
 WHERE
   user_id = $1
 `
 
 // returns user items in the rawest form
-func (q *Queries) GetUserItems(ctx context.Context, userID *uuid.UUID) ([]Useritem, error) {
-	rows, err := q.db.Query(ctx, getUserItems, userID)
+func (q *Queries) GetUserItemEntries(ctx context.Context, userID *uuid.UUID) ([]Useritementry, error) {
+	rows, err := q.db.Query(ctx, getUserItemEntries, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Useritem
+	var items []Useritementry
 	for rows.Next() {
-		var i Useritem
+		var i Useritementry
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -518,30 +518,30 @@ func (q *Queries) GetUserItems(ctx context.Context, userID *uuid.UUID) ([]Userit
 	return items, nil
 }
 
-const getUserItemsSinceTime = `-- name: GetUserItemsSinceTime :many
+const getUserItemEntriesSinceTime = `-- name: GetUserItemEntriesSinceTime :many
 SELECT
   id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted_at
 FROM
-  UserItems
+  UserItemEntries
 WHERE
   user_id = $1
   AND last_modified > $2
 `
 
-type GetUserItemsSinceTimeParams struct {
+type GetUserItemEntriesSinceTimeParams struct {
 	UserID       *uuid.UUID `json:"userId"`
 	LastModified time.Time  `json:"lastModified"`
 }
 
-func (q *Queries) GetUserItemsSinceTime(ctx context.Context, arg GetUserItemsSinceTimeParams) ([]Useritem, error) {
-	rows, err := q.db.Query(ctx, getUserItemsSinceTime, arg.UserID, arg.LastModified)
+func (q *Queries) GetUserItemEntriesSinceTime(ctx context.Context, arg GetUserItemEntriesSinceTimeParams) ([]Useritementry, error) {
+	rows, err := q.db.Query(ctx, getUserItemEntriesSinceTime, arg.UserID, arg.LastModified)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Useritem
+	var items []Useritementry
 	for rows.Next() {
-		var i Useritem
+		var i Useritementry
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -769,9 +769,9 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
 	return err
 }
 
-const updateUserItem = `-- name: UpdateUserItem :one
+const updateUserItemEntry = `-- name: UpdateUserItemEntry :one
 UPDATE
-  UserItems
+  UserItemEntries
 SET
   quantity = $1,
   price = $2,
@@ -783,21 +783,21 @@ RETURNING
   id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted_at
 `
 
-type UpdateUserItemParams struct {
+type UpdateUserItemEntryParams struct {
 	Quantity       decimal.Decimal     `json:"quantity"`
 	Price          decimal.NullDecimal `json:"price"`
 	ExpirationDate **time.Time         `json:"expirationDate"`
 	ID             uuid.UUID           `json:"id"`
 }
 
-func (q *Queries) UpdateUserItem(ctx context.Context, arg UpdateUserItemParams) (Useritem, error) {
-	row := q.db.QueryRow(ctx, updateUserItem,
+func (q *Queries) UpdateUserItemEntry(ctx context.Context, arg UpdateUserItemEntryParams) (Useritementry, error) {
+	row := q.db.QueryRow(ctx, updateUserItemEntry,
 		arg.Quantity,
 		arg.Price,
 		arg.ExpirationDate,
 		arg.ID,
 	)
-	var i Useritem
+	var i Useritementry
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -811,8 +811,8 @@ func (q *Queries) UpdateUserItem(ctx context.Context, arg UpdateUserItemParams) 
 	return i, err
 }
 
-const upsertUserItem = `-- name: UpsertUserItem :one
-INSERT INTO UserItems (
+const upsertUserItemEntry = `-- name: UpsertUserItemEntry :one
+INSERT INTO UserItemEntries (
   id,
   user_id,
   ingredient_id,
@@ -841,11 +841,11 @@ SET
   last_modified = EXCLUDED.last_modified,
   deleted_at = EXCLUDED.deleted_at
 WHERE
-  EXCLUDED.last_modified > UserItems.last_modified
+  EXCLUDED.last_modified > UserItemEntries.last_modified
 RETURNING id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted_at
 `
 
-type UpsertUserItemParams struct {
+type UpsertUserItemEntryParams struct {
 	ID             uuid.UUID           `json:"id"`
 	UserID         *uuid.UUID          `json:"userId"`
 	IngredientID   *uuid.UUID          `json:"ingredientId"`
@@ -856,8 +856,8 @@ type UpsertUserItemParams struct {
 	DeletedAt      **time.Time         `json:"deletedAt"`
 }
 
-func (q *Queries) UpsertUserItem(ctx context.Context, arg UpsertUserItemParams) (Useritem, error) {
-	row := q.db.QueryRow(ctx, upsertUserItem,
+func (q *Queries) UpsertUserItemEntry(ctx context.Context, arg UpsertUserItemEntryParams) (Useritementry, error) {
+	row := q.db.QueryRow(ctx, upsertUserItemEntry,
 		arg.ID,
 		arg.UserID,
 		arg.IngredientID,
@@ -867,7 +867,7 @@ func (q *Queries) UpsertUserItem(ctx context.Context, arg UpsertUserItemParams) 
 		arg.LastModified,
 		arg.DeletedAt,
 	)
-	var i Useritem
+	var i Useritementry
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,

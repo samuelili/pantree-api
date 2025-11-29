@@ -247,7 +247,7 @@ type User struct {
 	LastModified time.Time   `json:"lastModified"`
 }
 
-type Useritem struct {
+type Useritementry struct {
 	ID             uuid.UUID           `json:"id"`
 	UserID         *uuid.UUID          `json:"userId"`
 	IngredientID   *uuid.UUID          `json:"ingredientId"`

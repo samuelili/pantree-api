@@ -74,7 +74,7 @@ func _handleAddUserItem(c *gin.Context) {
 		price.Valid = true
 	}
 
-	item, err := queries.CreateUserItem(c, db.CreateUserItemParams{
+	item, err := queries.CreateUserItemEntry(c, db.CreateUserItemEntryParams{
 		UserID:       &userUuid,
 		IngredientID: &request.IngredientId,
 		Quantity:     quantity,

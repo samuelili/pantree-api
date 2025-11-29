@@ -12,13 +12,13 @@ import (
 )
 
 type SyncState struct {
-	Items []db.Useritem `json:"items" binding:"required"`
+	Items []db.Useritementry `json:"items" binding:"required"`
 }
 
 type SyncOperations struct {
-	ItemsToAdd    []db.Useritem `json:"itemsToAdd"`
-	ItemsToUpdate []db.Useritem `json:"itemsToUpdate"`
-	ItemsToDelete []db.Useritem `json:"itemsToDelete"`
+	ItemsToAdd    []db.Useritementry `json:"itemsToAdd"`
+	ItemsToUpdate []db.Useritementry `json:"itemsToUpdate"`
+	ItemsToDelete []db.Useritementry `json:"itemsToDelete"`
 }
 
 func _computeSyncStateHash(syncState SyncState) (uint32, error) {
@@ -52,14 +52,14 @@ func _pullDbSyncState(c *gin.Context) (SyncState, error) {
 
 	// get items
 
-	items, err := queries.GetUserItems(c, &userUuid)
+	items, err := queries.GetUserItemEntries(c, &userUuid)
 
 	if err != nil {
 		return SyncState{}, err
 	}
 
 	if items == nil {
-		items = []db.Useritem{}
+		items = []db.Useritementry{}
 	}
 
 	var syncState SyncState
@@ -69,8 +69,8 @@ func _pullDbSyncState(c *gin.Context) (SyncState, error) {
 }
 
 type SyncRequest struct {
-	Items        []db.Useritem `json:"items" binding:"required"`
-	LastSyncTime time.Time     `json:"lastSyncTime" binding:"required"`
+	Items        []db.Useritementry `json:"items" binding:"required"`
+	LastSyncTime time.Time          `json:"lastSyncTime" binding:"required"`
 }
 
 func sync(c *gin.Context) {
@@ -89,7 +89,7 @@ func sync(c *gin.Context) {
 	}
 
 	for _, item := range request.Items {
-		_, err := queries.UpsertUserItem(c, db.UpsertUserItemParams(item))
+		_, err := queries.UpsertUserItemEntry(c, db.UpsertUserItemEntryParams(item))
 
 		if err != nil && err != pgx.ErrNoRows {
 			sendError(c, 500, err, "Unable to upsert item")
@@ -97,7 +97,7 @@ func sync(c *gin.Context) {
 		}
 	}
 
-	toSyncItems, err := queries.GetUserItemsSinceTime(c, db.GetUserItemsSinceTimeParams{
+	toSyncItems, err := queries.GetUserItemEntriesSinceTime(c, db.GetUserItemEntriesSinceTimeParams{
 		UserID:       &userUuid,
 		LastModified: request.LastSyncTime,
 	})
@@ -108,7 +108,7 @@ func sync(c *gin.Context) {
 	}
 
 	if toSyncItems == nil {
-		toSyncItems = []db.Useritem{}
+		toSyncItems = []db.Useritementry{}
 	}
 
 	c.JSON(200, toSyncItems)

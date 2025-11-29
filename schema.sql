@@ -77,7 +77,7 @@ CREATE TABLE
 
 -- user inventories
 CREATE TABLE
-  UserItems (
+  UserItemEntries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
     user_id UUID REFERENCES Users (id) ON DELETE CASCADE,
     ingredient_id UUID REFERENCES Ingredients (id),
@@ -118,7 +118,7 @@ SELECT
   ui.last_modified
 FROM
   Users u
-  JOIN UserItems ui ON u.id = ui.user_id
+  JOIN UserItemEntries ui ON u.id = ui.user_id
   JOIN Ingredients i ON ui.ingredient_id = i.id
 WHERE
   ui.deleted_at IS NULL;

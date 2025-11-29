@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -259,7 +260,7 @@ VALUES
     $5
   )
 RETURNING
-  id, user_id, ingredient_id, quantity, price, expiration_date, last_modified
+  id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted_at
 `
 
 type CreateUserItemParams struct {
@@ -267,7 +268,7 @@ type CreateUserItemParams struct {
 	IngredientID   *uuid.UUID          `json:"ingredientId"`
 	Quantity       decimal.Decimal     `json:"quantity"`
 	Price          decimal.NullDecimal `json:"price"`
-	ExpirationDate pgtype.Timestamp    `json:"expirationDate"`
+	ExpirationDate **time.Time         `json:"expirationDate"`
 }
 
 func (q *Queries) CreateUserItem(ctx context.Context, arg CreateUserItemParams) (Useritem, error) {
@@ -287,8 +288,24 @@ func (q *Queries) CreateUserItem(ctx context.Context, arg CreateUserItemParams) 
 		&i.Price,
 		&i.ExpirationDate,
 		&i.LastModified,
+		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const deleteUserItem = `-- name: DeleteUserItem :exec
+UPDATE
+  UserItems
+SET
+  deleted_at = CURRENT_TIMESTAMP,
+  last_modified = CURRENT_TIMESTAMP
+WHERE
+  id = $1
+`
+
+func (q *Queries) DeleteUserItem(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteUserItem, id)
+	return err
 }
 
 const getFavorites = `-- name: GetFavorites :many
@@ -464,7 +481,7 @@ func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (User, error) 
 
 const getUserItems = `-- name: GetUserItems :many
 SELECT
-  id, user_id, ingredient_id, quantity, price, expiration_date, last_modified
+  id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted_at
 FROM
   UserItems
 WHERE
@@ -489,6 +506,51 @@ func (q *Queries) GetUserItems(ctx context.Context, userID *uuid.UUID) ([]Userit
 			&i.Price,
 			&i.ExpirationDate,
 			&i.LastModified,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUserItemsSinceTime = `-- name: GetUserItemsSinceTime :many
+SELECT
+  id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted_at
+FROM
+  UserItems
+WHERE
+  user_id = $1
+  AND last_modified > $2
+`
+
+type GetUserItemsSinceTimeParams struct {
+	UserID       *uuid.UUID `json:"userId"`
+	LastModified time.Time  `json:"lastModified"`
+}
+
+func (q *Queries) GetUserItemsSinceTime(ctx context.Context, arg GetUserItemsSinceTimeParams) ([]Useritem, error) {
+	rows, err := q.db.Query(ctx, getUserItemsSinceTime, arg.UserID, arg.LastModified)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Useritem
+	for rows.Next() {
+		var i Useritem
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.IngredientID,
+			&i.Quantity,
+			&i.Price,
+			&i.ExpirationDate,
+			&i.LastModified,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -529,14 +591,14 @@ type GetUserPantryParams struct {
 }
 
 type GetUserPantryRow struct {
-	UserMeasurementSystem MeasureType      `json:"userMeasurementSystem"`
-	IngredientName        string           `json:"ingredientName"`
-	Quantity              decimal.Decimal  `json:"quantity"`
-	ExpirationDate        pgtype.Timestamp `json:"expirationDate"`
-	Unit                  UnitType         `json:"unit"`
-	StorageLoc            LocType          `json:"storageLoc"`
-	IngredientType        GrocType         `json:"ingredientType"`
-	LastModified          pgtype.Timestamp `json:"lastModified"`
+	UserMeasurementSystem MeasureType     `json:"userMeasurementSystem"`
+	IngredientName        string          `json:"ingredientName"`
+	Quantity              decimal.Decimal `json:"quantity"`
+	ExpirationDate        **time.Time     `json:"expirationDate"`
+	Unit                  UnitType        `json:"unit"`
+	StorageLoc            LocType         `json:"storageLoc"`
+	IngredientType        GrocType        `json:"ingredientType"`
+	LastModified          time.Time       `json:"lastModified"`
 }
 
 // select by either id or email
@@ -705,4 +767,116 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
 		arg.ID,
 	)
 	return err
+}
+
+const updateUserItem = `-- name: UpdateUserItem :one
+UPDATE
+  UserItems
+SET
+  quantity = $1,
+  price = $2,
+  expiration_date = $3,
+  last_modified = CURRENT_TIMESTAMP
+WHERE
+  id = $4
+RETURNING
+  id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted_at
+`
+
+type UpdateUserItemParams struct {
+	Quantity       decimal.Decimal     `json:"quantity"`
+	Price          decimal.NullDecimal `json:"price"`
+	ExpirationDate **time.Time         `json:"expirationDate"`
+	ID             uuid.UUID           `json:"id"`
+}
+
+func (q *Queries) UpdateUserItem(ctx context.Context, arg UpdateUserItemParams) (Useritem, error) {
+	row := q.db.QueryRow(ctx, updateUserItem,
+		arg.Quantity,
+		arg.Price,
+		arg.ExpirationDate,
+		arg.ID,
+	)
+	var i Useritem
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.IngredientID,
+		&i.Quantity,
+		&i.Price,
+		&i.ExpirationDate,
+		&i.LastModified,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const upsertUserItem = `-- name: UpsertUserItem :one
+INSERT INTO UserItems (
+  id,
+  user_id,
+  ingredient_id,
+  quantity,
+  price,
+  expiration_date,
+  last_modified,
+  deleted_at
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  $5,
+  $6,
+  $7,
+  $8
+)
+ON CONFLICT (id) DO UPDATE
+SET
+  user_id = EXCLUDED.user_id,
+  ingredient_id = EXCLUDED.ingredient_id,
+  quantity = EXCLUDED.quantity,
+  price = EXCLUDED.price,
+  expiration_date = EXCLUDED.expiration_date,
+  last_modified = EXCLUDED.last_modified,
+  deleted_at = EXCLUDED.deleted_at
+WHERE
+  EXCLUDED.last_modified > UserItems.last_modified
+RETURNING id, user_id, ingredient_id, quantity, price, expiration_date, last_modified, deleted_at
+`
+
+type UpsertUserItemParams struct {
+	ID             uuid.UUID           `json:"id"`
+	UserID         *uuid.UUID          `json:"userId"`
+	IngredientID   *uuid.UUID          `json:"ingredientId"`
+	Quantity       decimal.Decimal     `json:"quantity"`
+	Price          decimal.NullDecimal `json:"price"`
+	ExpirationDate **time.Time         `json:"expirationDate"`
+	LastModified   time.Time           `json:"lastModified"`
+	DeletedAt      **time.Time         `json:"deletedAt"`
+}
+
+func (q *Queries) UpsertUserItem(ctx context.Context, arg UpsertUserItemParams) (Useritem, error) {
+	row := q.db.QueryRow(ctx, upsertUserItem,
+		arg.ID,
+		arg.UserID,
+		arg.IngredientID,
+		arg.Quantity,
+		arg.Price,
+		arg.ExpirationDate,
+		arg.LastModified,
+		arg.DeletedAt,
+	)
+	var i Useritem
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.IngredientID,
+		&i.Quantity,
+		&i.Price,
+		&i.ExpirationDate,
+		&i.LastModified,
+		&i.DeletedAt,
+	)
+	return i, err
 }

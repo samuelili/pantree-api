@@ -5,73 +5,20 @@ import (
 	"encoding/binary"
 	"hash/fnv"
 	"pantree/api/db"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 )
 
 type SyncState struct {
 	Items []db.Useritem `json:"items" binding:"required"`
-	User  db.User       `json:"user"  binding:"required"`
 }
 
 type SyncOperations struct {
 	ItemsToAdd    []db.Useritem `json:"itemsToAdd"`
 	ItemsToUpdate []db.Useritem `json:"itemsToUpdate"`
 	ItemsToDelete []db.Useritem `json:"itemsToDelete"`
-	UserToUpdate  *db.User      `json:"userToUpdate"`
-}
-
-func _mergeSyncStates(remote SyncState, local SyncState) SyncOperations {
-	syncOperations := SyncOperations{
-		ItemsToAdd:    []db.Useritem{},
-		ItemsToUpdate: []db.Useritem{},
-		ItemsToDelete: []db.Useritem{},
-		UserToUpdate:  nil,
-	}
-
-	// we need to isolate three SETS of items:
-	// 1. new items
-	// 2. deleted items
-	// 3. updated items
-
-	// to prepare, construct a set of IDs for remote and local items
-	remoteItemMap := make(map[string]db.Useritem)
-	for _, item := range remote.Items {
-		remoteItemMap[item.ID.String()] = item
-	}
-	localItemMap := make(map[string]db.Useritem)
-	for _, item := range local.Items {
-		localItemMap[item.ID.String()] = item
-	}
-
-	// 1. added items will be local set different remote set
-	for _, item := range local.Items {
-		if _, exists := remoteItemMap[item.ID.String()]; !exists {
-			syncOperations.ItemsToAdd = append(syncOperations.ItemsToAdd, item)
-		}
-	}
-
-	// 2. deleted items will be remote set different local set
-	for _, item := range remote.Items {
-		if _, exists := localItemMap[item.ID.String()]; !exists {
-			syncOperations.ItemsToDelete = append(syncOperations.ItemsToDelete, item)
-		}
-	}
-
-	// 3. updated items will be items that are in both sets, but have different updated_at timestamps
-	for _, localItem := range local.Items {
-		if remoteItem, exists := remoteItemMap[localItem.ID.String()]; exists {
-			if localItem.LastModified.Time.After(remoteItem.LastModified.Time) {
-				syncOperations.ItemsToUpdate = append(syncOperations.ItemsToUpdate, localItem)
-			}
-		}
-	}
-
-	// now we process user difference. we do a simple replace for now
-	// TOOD: add last modified
-	syncOperations.UserToUpdate = &local.User
-
-	return syncOperations
 }
 
 func _computeSyncStateHash(syncState SyncState) (uint32, error) {
@@ -85,21 +32,10 @@ func _computeSyncStateHash(syncState SyncState) (uint32, error) {
 			return 0, err
 		}
 
-		err = binary.Write(buf, binary.BigEndian, item.LastModified.Time.UnixMilli())
+		err = binary.Write(buf, binary.BigEndian, item.LastModified.UnixMilli())
 		if err != nil {
 			return 0, err
 		}
-	}
-
-	// now write for user
-	err := binary.Write(buf, binary.BigEndian, syncState.User.ID)
-	if err != nil {
-		return 0, err
-	}
-
-	err = binary.Write(buf, binary.BigEndian, syncState.User.LastModified.Time.UnixMilli())
-	if err != nil {
-		return 0, err
 	}
 
 	hash := fnv.New32a()
@@ -110,14 +46,6 @@ func _computeSyncStateHash(syncState SyncState) (uint32, error) {
 
 func _pullDbSyncState(c *gin.Context) (SyncState, error) {
 	userUuid, err := getUserId(c)
-	if err != nil {
-		return SyncState{}, err
-	}
-
-	user, err := queries.GetUser(c, db.GetUserParams{
-		ID: &userUuid,
-	})
-
 	if err != nil {
 		return SyncState{}, err
 	}
@@ -136,42 +64,54 @@ func _pullDbSyncState(c *gin.Context) (SyncState, error) {
 
 	var syncState SyncState
 	syncState.Items = items
-	syncState.User = user
 
 	return syncState, nil
 }
 
-func pull(c *gin.Context) {
-	syncState, err := _pullDbSyncState(c)
+type SyncRequest struct {
+	Items        []db.Useritem `json:"items" binding:"required"`
+	LastSyncTime time.Time     `json:"lastSyncTime" binding:"required"`
+}
 
+func sync(c *gin.Context) {
+	userUuid, err := getUserId(c)
 	if err != nil {
-		sendError(c, 500, err, "Unable to pull sync state from database")
+		sendError(c, 400, err, "Invalid user")
 		return
 	}
 
-	c.JSON(200, syncState)
-}
+	// on device
+	var request SyncRequest
 
-func push(c *gin.Context) {
-	var request SyncState
 	if err := c.BindJSON(&request); err != nil {
 		sendError(c, 400, err, "Invalid request parameters")
 		return
 	}
 
-	// get current remote sync state
-	remoteSyncState, err := _pullDbSyncState(c)
+	for _, item := range request.Items {
+		_, err := queries.UpsertUserItem(c, db.UpsertUserItemParams(item))
+
+		if err != nil && err != pgx.ErrNoRows {
+			sendError(c, 500, err, "Unable to upsert item")
+			return
+		}
+	}
+
+	toSyncItems, err := queries.GetUserItemsSinceTime(c, db.GetUserItemsSinceTimeParams{
+		UserID:       &userUuid,
+		LastModified: request.LastSyncTime,
+	})
+
 	if err != nil {
-		sendError(c, 500, err, "Unable to pull sync state from database")
+		sendError(c, 500, err, "Unable to get user items since time")
 		return
 	}
 
-	// merge states
-	syncOperations := _mergeSyncStates(remoteSyncState, request)
+	if toSyncItems == nil {
+		toSyncItems = []db.Useritem{}
+	}
 
-	// get synced operations
-
-	c.JSON(200, syncOperations)
+	c.JSON(200, toSyncItems)
 }
 
 func syncStateHash(c *gin.Context) {
@@ -195,7 +135,6 @@ func syncStateHash(c *gin.Context) {
 }
 
 func registerSyncRoutes(router *gin.RouterGroup) {
-	router.GET("/pull", pull)
-	router.POST("/push", push)
+	router.POST("/sync", sync)
 	router.GET("/hash", syncStateHash)
 }

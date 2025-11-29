@@ -168,7 +168,7 @@ func Test_mergeSyncStates(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := _mergeSyncStates(tt.remote, tt.local)
+			got := _getMergeSyncOperations(tt.remote, tt.local)
 
 			// 1. Verify Additions
 			if len(got.ItemsToAdd) != len(tt.expected.ItemsToAdd) {

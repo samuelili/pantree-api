@@ -7,6 +7,7 @@ package db
 import (
 	"database/sql/driver"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -238,12 +239,12 @@ type Recipeingredientsview struct {
 }
 
 type User struct {
-	ID           uuid.UUID        `json:"id"`
-	Email        string           `json:"email"`
-	Name         string           `json:"name"`
-	DateJoined   pgtype.Date      `json:"dateJoined"`
-	PrefMeasure  MeasureType      `json:"prefMeasure"`
-	LastModified pgtype.Timestamp `json:"lastModified"`
+	ID           uuid.UUID   `json:"id"`
+	Email        string      `json:"email"`
+	Name         string      `json:"name"`
+	DateJoined   pgtype.Date `json:"dateJoined"`
+	PrefMeasure  MeasureType `json:"prefMeasure"`
+	LastModified time.Time   `json:"lastModified"`
 }
 
 type Useritem struct {
@@ -252,19 +253,20 @@ type Useritem struct {
 	IngredientID   *uuid.UUID          `json:"ingredientId"`
 	Quantity       decimal.Decimal     `json:"quantity"`
 	Price          decimal.NullDecimal `json:"price"`
-	ExpirationDate pgtype.Timestamp    `json:"expirationDate"`
-	LastModified   pgtype.Timestamp    `json:"lastModified"`
+	ExpirationDate **time.Time         `json:"expirationDate"`
+	LastModified   time.Time           `json:"lastModified"`
+	DeletedAt      **time.Time         `json:"deletedAt"`
 }
 
 type Userpantryview struct {
-	UserID                uuid.UUID        `json:"userId"`
-	UserEmail             string           `json:"userEmail"`
-	UserMeasurementSystem MeasureType      `json:"userMeasurementSystem"`
-	IngredientName        string           `json:"ingredientName"`
-	Quantity              decimal.Decimal  `json:"quantity"`
-	ExpirationDate        pgtype.Timestamp `json:"expirationDate"`
-	Unit                  UnitType         `json:"unit"`
-	StorageLoc            LocType          `json:"storageLoc"`
-	IngredientType        GrocType         `json:"ingredientType"`
-	LastModified          pgtype.Timestamp `json:"lastModified"`
+	UserID                uuid.UUID       `json:"userId"`
+	UserEmail             string          `json:"userEmail"`
+	UserMeasurementSystem MeasureType     `json:"userMeasurementSystem"`
+	IngredientName        string          `json:"ingredientName"`
+	Quantity              decimal.Decimal `json:"quantity"`
+	ExpirationDate        **time.Time     `json:"expirationDate"`
+	Unit                  UnitType        `json:"unit"`
+	StorageLoc            LocType         `json:"storageLoc"`
+	IngredientType        GrocType        `json:"ingredientType"`
+	LastModified          time.Time       `json:"lastModified"`
 }

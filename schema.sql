@@ -84,7 +84,8 @@ CREATE TABLE
     quantity NUMERIC NOT NULL,
     price NUMERIC(1000, 2) CHECK (price > 0),
     expiration_date TIMESTAMP,
-    last_modified TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    last_modified TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP
   );
 
 -- recipe ingredients view
@@ -118,4 +119,6 @@ SELECT
 FROM
   Users u
   JOIN UserItems ui ON u.id = ui.user_id
-  JOIN Ingredients i ON ui.ingredient_id = i.id;
+  JOIN Ingredients i ON ui.ingredient_id = i.id
+WHERE
+  ui.deleted_at IS NULL;

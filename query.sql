@@ -212,6 +212,70 @@ VALUES
 RETURNING
   *;
 
+-- name: UpdateUserItem :one
+UPDATE
+  UserItems
+SET
+  quantity = sqlc.arg ('quantity'),
+  price = sqlc.arg ('price'),
+  expiration_date = sqlc.narg ('expiration_date'),
+  last_modified = CURRENT_TIMESTAMP
+WHERE
+  id = sqlc.arg ('id')
+RETURNING
+  *;
+
+-- name: DeleteUserItem :exec
+UPDATE
+  UserItems
+SET
+  deleted_at = CURRENT_TIMESTAMP,
+  last_modified = CURRENT_TIMESTAMP
+WHERE
+  id = sqlc.arg ('id');
+
+-- name: GetUserItemsSinceTime :many
+SELECT
+  *
+FROM
+  UserItems
+WHERE
+  user_id = sqlc.arg('user_id')
+  AND last_modified > sqlc.arg('last_modified');
+
+-- name: UpsertUserItem :one
+INSERT INTO UserItems (
+  id,
+  user_id,
+  ingredient_id,
+  quantity,
+  price,
+  expiration_date,
+  last_modified,
+  deleted_at
+) VALUES (
+  sqlc.arg('id'),
+  sqlc.arg('user_id'),
+  sqlc.arg('ingredient_id'),
+  sqlc.arg('quantity'),
+  sqlc.arg('price'),
+  sqlc.narg('expiration_date'),
+  sqlc.arg('last_modified'),
+  sqlc.narg('deleted_at')
+)
+ON CONFLICT (id) DO UPDATE
+SET
+  user_id = EXCLUDED.user_id,
+  ingredient_id = EXCLUDED.ingredient_id,
+  quantity = EXCLUDED.quantity,
+  price = EXCLUDED.price,
+  expiration_date = EXCLUDED.expiration_date,
+  last_modified = EXCLUDED.last_modified,
+  deleted_at = EXCLUDED.deleted_at
+WHERE
+  EXCLUDED.last_modified > UserItems.last_modified
+RETURNING *;
+
 -- returns user items in the rawest form
 -- name: GetUserItems :many
 SELECT

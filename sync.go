@@ -91,7 +91,7 @@ func sync(c *gin.Context) {
 	for _, item := range request.Items {
 		_, err := queries.UpsertUserItemEntry(c, db.UpsertUserItemEntryParams{
 			ID:             item.ID,
-			UserID:         item.UserID,
+			UserID:         &userUuid,
 			IngredientID:   item.IngredientID,
 			Quantity:       item.Quantity,
 			Price:          item.Price,

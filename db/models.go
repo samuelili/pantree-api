@@ -253,7 +253,7 @@ type Useritementry struct {
 	IngredientID   *uuid.UUID          `json:"ingredientId"`
 	Quantity       decimal.Decimal     `json:"quantity"`
 	Price          decimal.NullDecimal `json:"price"`
-	ExpirationDate **time.Time         `json:"expirationDate"`
+	ExpirationDate *time.Time          `json:"expirationDate"`
 	LastModified   time.Time           `json:"lastModified"`
 	Deleted        bool                `json:"deleted"`
 }
@@ -264,7 +264,7 @@ type Userpantryview struct {
 	UserMeasurementSystem MeasureType     `json:"userMeasurementSystem"`
 	IngredientName        string          `json:"ingredientName"`
 	Quantity              decimal.Decimal `json:"quantity"`
-	ExpirationDate        **time.Time     `json:"expirationDate"`
+	ExpirationDate        *time.Time      `json:"expirationDate"`
 	Unit                  UnitType        `json:"unit"`
 	StorageLoc            LocType         `json:"storageLoc"`
 	IngredientType        GrocType        `json:"ingredientType"`

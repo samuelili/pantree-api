@@ -111,15 +111,22 @@ SELECT
   u.email AS user_email,
   u.pref_measure AS user_measurement_system,
   i.name AS ingredient_name,
-  ui.quantity,
-  ui.expiration_date,
+  CAST(SUM(ui.quantity) AS NUMERIC) AS quantity,
+  MIN(ui.expiration_date) AS expiration_date,
   i.unit,
   i.storage_loc,
-  i.ingredient_type,
-  ui.last_modified
+  i.ingredient_type
 FROM
   Users u
   JOIN UserItemEntries ui ON u.id = ui.user_id
   JOIN Ingredients i ON ui.ingredient_id = i.id
 WHERE
-  ui.deleted = false;
+  ui.deleted = false
+GROUP BY
+  u.id,
+  u.email,
+  u.pref_measure,
+  i.name,
+  i.unit,
+  i.storage_loc,
+  i.ingredient_type;

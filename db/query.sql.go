@@ -476,8 +476,7 @@ SELECT
   expiration_date,
   unit,
   storage_loc,
-  ingredient_type,
-  last_modified
+  ingredient_type
 FROM
   UserPantryView
 WHERE
@@ -500,11 +499,10 @@ type GetUserPantryRow struct {
 	UserMeasurementSystem MeasureType     `json:"userMeasurementSystem"`
 	IngredientName        string          `json:"ingredientName"`
 	Quantity              decimal.Decimal `json:"quantity"`
-	ExpirationDate        *time.Time      `json:"expirationDate"`
+	ExpirationDate        interface{}     `json:"expirationDate"`
 	Unit                  UnitType        `json:"unit"`
 	StorageLoc            LocType         `json:"storageLoc"`
 	IngredientType        GrocType        `json:"ingredientType"`
-	LastModified          time.Time       `json:"lastModified"`
 }
 
 // select by either id or email
@@ -525,7 +523,6 @@ func (q *Queries) GetUserPantry(ctx context.Context, arg GetUserPantryParams) ([
 			&i.Unit,
 			&i.StorageLoc,
 			&i.IngredientType,
-			&i.LastModified,
 		); err != nil {
 			return nil, err
 		}

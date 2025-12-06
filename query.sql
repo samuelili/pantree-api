@@ -263,8 +263,7 @@ SELECT
   expiration_date,
   unit,
   storage_loc,
-  ingredient_type,
-  last_modified
+  ingredient_type
 FROM
   UserPantryView
 WHERE

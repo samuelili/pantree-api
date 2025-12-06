@@ -73,6 +73,8 @@ type SyncRequest struct {
 	LastSyncTime time.Time          `json:"lastSyncTime" binding:"required"`
 }
 
+// TODO: this may have a vulnerability if the Items request includes a UserID that does
+// not actually match the user making the request
 func sync(c *gin.Context) {
 	userUuid, err := getUserId(c)
 	if err != nil {
@@ -120,7 +122,31 @@ func sync(c *gin.Context) {
 		toSyncItems = []db.Useritementry{}
 	}
 
-	c.JSON(200, toSyncItems)
+	// now get ingredients
+
+	// first, need to get ids of all
+	uuids, err := queries.GetUserItemEntryIdsForUser(c, &userUuid)
+
+	if err != nil {
+		sendError(c, 500, err, "Unable to get user item entry ids for user")
+		return
+	}
+
+	ingredients, err := queries.GetIngredientsByIds(c, uuids)
+
+	if err != nil {
+		sendError(c, 500, err, "Unable to get ingredients")
+		return
+	}
+
+	if ingredients == nil {
+		ingredients = []db.Ingredient{}
+	}
+
+	c.JSON(200, gin.H{
+		"items":       toSyncItems,
+		"ingredients": ingredients,
+	})
 }
 
 func syncStateHash(c *gin.Context) {

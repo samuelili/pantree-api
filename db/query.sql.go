@@ -33,65 +33,6 @@ func (q *Queries) AddFavorite(ctx context.Context, arg AddFavoriteParams) error 
 	return err
 }
 
-const createIngredient = `-- name: CreateIngredient :one
-INSERT INTO
-  Ingredients (
-    creator_id,
-    name,
-    unit,
-    storage_loc,
-    ingredient_type,
-    image_path
-  )
-VALUES
-  (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6
-  )
-RETURNING
-  id, creator_id, name, unit, storage_loc, ingredient_type, image_path
-`
-
-type CreateIngredientParams struct {
-	CreatorID      *uuid.UUID  `json:"creatorId"`
-	Name           string      `json:"name"`
-	Unit           UnitType    `json:"unit"`
-	StorageLoc     LocType     `json:"storageLoc"`
-	IngredientType GrocType    `json:"ingredientType"`
-	ImagePath      pgtype.Text `json:"imagePath"`
-}
-
-// WHERE
-//
-//	name = sqlc.arg('name');
-//
-// date created is current date
-func (q *Queries) CreateIngredient(ctx context.Context, arg CreateIngredientParams) (Ingredient, error) {
-	row := q.db.QueryRow(ctx, createIngredient,
-		arg.CreatorID,
-		arg.Name,
-		arg.Unit,
-		arg.StorageLoc,
-		arg.IngredientType,
-		arg.ImagePath,
-	)
-	var i Ingredient
-	err := row.Scan(
-		&i.ID,
-		&i.CreatorID,
-		&i.Name,
-		&i.Unit,
-		&i.StorageLoc,
-		&i.IngredientType,
-		&i.ImagePath,
-	)
-	return i, err
-}
-
 const createRecipe = `-- name: CreateRecipe :one
 INSERT INTO
   Recipes (
@@ -330,41 +271,6 @@ func (q *Queries) GetFavorites(ctx context.Context, userID uuid.UUID) ([]uuid.UU
 			return nil, err
 		}
 		items = append(items, recipe_id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getIngredients = `-- name: GetIngredients :many
-SELECT
-  id, creator_id, name, unit, storage_loc, ingredient_type, image_path
-FROM
-  Ingredients
-`
-
-func (q *Queries) GetIngredients(ctx context.Context) ([]Ingredient, error) {
-	rows, err := q.db.Query(ctx, getIngredients)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Ingredient
-	for rows.Next() {
-		var i Ingredient
-		if err := rows.Scan(
-			&i.ID,
-			&i.CreatorID,
-			&i.Name,
-			&i.Unit,
-			&i.StorageLoc,
-			&i.IngredientType,
-			&i.ImagePath,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

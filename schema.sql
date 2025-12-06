@@ -72,7 +72,8 @@ CREATE TABLE
     unit UNIT_TYPE NOT NULL,
     storage_loc LOC_TYPE NOT NULL,
     ingredient_type GROC_TYPE NOT NULL,
-    image_path TEXT
+    image_path TEXT,
+    last_modified TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 
 -- user inventories

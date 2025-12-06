@@ -1,10 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"pantree/api/db"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 /**
@@ -78,7 +81,82 @@ func _handleNewIngredient(c *gin.Context) {
 	c.JSON(200, newIngredient)
 }
 
+/**
+ * /getIngredientsByIds
+ */
+type GetIngredientsByIdsRequest struct {
+	Ids []string `json:"ids" binding:"required"`
+}
+
+func _handleGetIngredientsByIds(c *gin.Context) {
+	var request GetIngredientsByIdsRequest
+	if err := c.BindJSON(&request); err != nil {
+		log.Println("Invalid request body: \n", err)
+		sendError(c, 400, err, "Invalid request body.")
+		return
+	}
+
+	log.Println("Getting ingredients by ids")
+	uuids := make([]uuid.UUID, len(request.Ids))
+	for i, id := range request.Ids {
+		uuid, err := uuid.Parse(id)
+		if err != nil {
+			log.Println("Invalid UUID: ", err)
+			sendError(c, 400, err, fmt.Sprintf("Invalid UUID: %s. at %d", id, i))
+			return
+		}
+		uuids[i] = uuid
+	}
+
+	ingredients, err := queries.GetIngredientsByIds(c, uuids)
+
+	if err != nil {
+		log.Println("Could not get ingredients by ids:", err)
+		sendError(c, 500, err, "Could not get ingredients by ids.")
+		return
+	}
+
+	if ingredients == nil {
+		ingredients = []db.Ingredient{}
+	}
+
+	c.JSON(200, ingredients)
+}
+
+/**
+ * /searchIngredients
+ */
+type SearchIngredientsRequest struct {
+	Name string `json:"name" binding:"required"`
+}
+
+func _handleSearchIngredients(c *gin.Context) {
+	var request SearchIngredientsRequest
+	if err := c.BindJSON(&request); err != nil {
+		log.Println("Invalid request body: \n", err)
+		sendError(c, 400, err, "Invalid request body.")
+		return
+	}
+
+	log.Println("Searching ingredients")
+	ingredients, err := queries.SearchIngredients(c, pgtype.Text{String: request.Name, Valid: true})
+
+	if err != nil {
+		log.Println("Could not search ingredients:", err)
+		sendError(c, 500, err, "Could not search ingredients.")
+		return
+	}
+
+	if ingredients == nil {
+		ingredients = []db.Ingredient{}
+	}
+
+	c.JSON(200, ingredients)
+}
+
 func registerIngredientsRoutes(router *gin.RouterGroup) {
 	router.GET("/ingredients", _handleGetIngredients)
+	router.POST("/ingredientsByIds", _handleGetIngredientsByIds)
+	router.POST("/searchIngredients", _handleSearchIngredients)
 	router.POST("/newIngredient", _handleNewIngredient)
 }

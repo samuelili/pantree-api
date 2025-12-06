@@ -206,6 +206,7 @@ type Ingredient struct {
 	StorageLoc     LocType     `json:"storageLoc"`
 	IngredientType GrocType    `json:"ingredientType"`
 	ImagePath      pgtype.Text `json:"imagePath"`
+	LastModified   time.Time   `json:"lastModified"`
 }
 
 type Recipe struct {

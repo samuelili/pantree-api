@@ -1,6 +1,6 @@
--- name: GetUserItemEntryIdsForUser :many
+-- name: GetUserItemEntryIngredientIdsForUser :many
 SELECT
-  id
+  ingredient_id
 FROM
   UserItemEntries
 WHERE

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -125,11 +126,18 @@ func sync(c *gin.Context) {
 	// now get ingredients
 
 	// first, need to get ids of all
-	uuids, err := queries.GetUserItemEntryIdsForUser(c, &userUuid)
+	uuidPointers, err := queries.GetUserItemEntryIngredientIdsForUser(c, &userUuid)
 
 	if err != nil {
-		sendError(c, 500, err, "Unable to get user item entry ids for user")
+		sendError(c, 500, err, "Unable to get user item entry ingredient ids for user")
 		return
+	}
+
+	uuids := make([]uuid.UUID, len(uuidPointers))
+	for i, uuidPointer := range uuidPointers {
+		if uuidPointer != nil {
+			uuids[i] = *uuidPointer
+		}
 	}
 
 	ingredients, err := queries.GetIngredientsByIds(c, uuids)

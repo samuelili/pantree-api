@@ -11,28 +11,28 @@ import (
 	"github.com/google/uuid"
 )
 
-const getUserItemEntryIdsForUser = `-- name: GetUserItemEntryIdsForUser :many
+const getUserItemEntryIngredientIdsForUser = `-- name: GetUserItemEntryIngredientIdsForUser :many
 SELECT
-  id
+  ingredient_id
 FROM
   UserItemEntries
 WHERE
   user_id = $1
 `
 
-func (q *Queries) GetUserItemEntryIdsForUser(ctx context.Context, userID *uuid.UUID) ([]uuid.UUID, error) {
-	rows, err := q.db.Query(ctx, getUserItemEntryIdsForUser, userID)
+func (q *Queries) GetUserItemEntryIngredientIdsForUser(ctx context.Context, userID *uuid.UUID) ([]*uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, getUserItemEntryIngredientIdsForUser, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []uuid.UUID
+	var items []*uuid.UUID
 	for rows.Next() {
-		var id uuid.UUID
-		if err := rows.Scan(&id); err != nil {
+		var ingredient_id *uuid.UUID
+		if err := rows.Scan(&ingredient_id); err != nil {
 			return nil, err
 		}
-		items = append(items, id)
+		items = append(items, ingredient_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

@@ -59,7 +59,12 @@ func createRecipe(c *gin.Context) {
 		return
 	}
 
-	userUuid, _ := getUserId(c)
+	userUuid, err := getUserId(c)
+
+	if err != nil {
+		log.Println("Unable to get user UUID: \n", err)
+		return
+	}
 
 	newRecipe := db.CreateRecipeParams{
 		CreatorID: &userUuid,
@@ -166,8 +171,91 @@ func updateRecipe(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "Recipe updated successfully"})
 }
 
+func favoriteRecipe(c *gin.Context) {
+	var recipeId uuid.UUID
+
+	if err := c.BindJSON(&recipeId); err != nil {
+		sendError(c, http.StatusBadRequest, err, "Invalid request body")
+		return
+	}
+
+	userUuid, err := getUserId(c)
+
+	if err != nil {
+		log.Println("Unable to get user UUID: \n", err)
+		return
+	}
+
+	err = queries.AddFavorite(c, db.AddFavoriteParams{
+		UserID:   userUuid,
+		RecipeID: recipeId,
+	})
+
+	if err != nil {
+		sendError(c, http.StatusInternalServerError, err, "Could not favorite recipe")
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "Recipe favorited sucessfully"})
+
+}
+
+func unfavoriteRecipe(c *gin.Context) {
+	var recipeId uuid.UUID
+
+	if err := c.BindJSON(&recipeId); err != nil {
+		sendError(c, http.StatusBadRequest, err, "Invalid request body")
+		return
+	}
+
+	userUuid, err := getUserId(c)
+
+	if err != nil {
+		log.Println("Unable to get user UUID: \n", err)
+		return
+	}
+
+	err = queries.RemoveFavorite(c, db.RemoveFavoriteParams{
+		UserID:   userUuid,
+		RecipeID: recipeId,
+	})
+
+	if err != nil {
+		sendError(c, http.StatusInternalServerError, err, "Could not unfavorite recipe")
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "Recipe unfavorited sucessfully"})
+
+}
+
+func getFavorites(c *gin.Context) {
+	userUuid, err := getUserId(c)
+
+	if err != nil {
+		log.Println("Unable to get user UUID: \n", err)
+		return
+	}
+
+	favorites, err := queries.GetFavorites(c, userUuid)
+
+	if err != nil {
+		sendError(c, http.StatusInternalServerError, err, "Could not fetch favorites")
+		return
+	}
+
+	if len(favorites) == 0 {
+		favorites = []uuid.UUID{}
+	}
+
+	c.IndentedJSON(http.StatusOK, favorites)
+}
+
 func registerRecipeRoutes(router *gin.RouterGroup) {
 	router.GET("/get", getRecipes)
 	router.POST("/create", createRecipe)
 	router.POST("/update", updateRecipe)
+	router.POST("/favorite", favoriteRecipe)
+	router.POST("/unfavorite", unfavoriteRecipe)
+	router.GET("/getfavorites", getFavorites)
 }

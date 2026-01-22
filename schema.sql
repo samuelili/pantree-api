@@ -115,7 +115,7 @@ SELECT
   MIN(ui.expiration_date) AS expiration_date,
   i.unit,
   i.storage_loc,
-  i.ingredient_type,
+  i.ingredient_type
 FROM
   Users u
   JOIN UserItemEntries ui ON u.id = ui.user_id

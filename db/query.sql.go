@@ -496,13 +496,13 @@ type GetUserPantryParams struct {
 }
 
 type GetUserPantryRow struct {
-	UserMeasurementSystem MeasureType     `json:"userMeasurementSystem"`
-	IngredientName        string          `json:"ingredientName"`
-	Quantity              decimal.Decimal `json:"quantity"`
-	ExpirationDate        interface{}     `json:"expirationDate"`
-	Unit                  UnitType        `json:"unit"`
-	StorageLoc            LocType         `json:"storageLoc"`
-	IngredientType        GrocType        `json:"ingredientType"`
+	UserMeasurementSystem MeasureType `json:"userMeasurementSystem"`
+	IngredientName        string      `json:"ingredientName"`
+	Quantity              int64       `json:"quantity"`
+	ExpirationDate        interface{} `json:"expirationDate"`
+	Unit                  UnitType    `json:"unit"`
+	StorageLoc            LocType     `json:"storageLoc"`
+	IngredientType        GrocType    `json:"ingredientType"`
 }
 
 // select by either id or email

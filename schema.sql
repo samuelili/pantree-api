@@ -111,7 +111,7 @@ SELECT
   u.email AS user_email,
   u.pref_measure AS user_measurement_system,
   i.name AS ingredient_name,
-  SUM(ui.quantity) AS quantity,
+  CAST(SUM(ui.quantity) AS NUMERIC) AS quantity,
   MIN(ui.expiration_date) AS expiration_date,
   i.unit,
   i.storage_loc,

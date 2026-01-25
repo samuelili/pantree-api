@@ -32,6 +32,18 @@ type Config struct {
 		From string `yaml:"from"`
 		ARN  string `yaml:"arn"`
 	} `yaml:"email"`
+
+	// S3 holds configuration for the S3 service.
+	S3 struct {
+		Bucket string `yaml:"bucket"`
+		Region string `yaml:"region"`
+	} `yaml:"s3"`
+
+	// AWS holds AWS credentials and configuration.
+	AWS struct {
+		AccessKeyID     string `yaml:"accessKeyId"`
+		SecretAccessKey string `yaml:"secretAccessKey"`
+	} `yaml:"aws"`
 }
 
 var cfg Config

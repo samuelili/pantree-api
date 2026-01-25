@@ -10,3 +10,9 @@ database:
 email:
   from: ""
   arn: ""
+s3:
+  bucket: ""
+  region: ""
+aws:
+  accessKeyId: ""
+  secretAccessKey: ""

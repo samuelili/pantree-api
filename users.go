@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net/http"
 	"pantree/api/db"
+	"path"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -38,11 +41,68 @@ func createOrGetNewUser(ctx context.Context, email string) (*db.User, error) {
 	return &user, nil
 }
 
+func uploadUserImage(c *gin.Context) {
+	// read in image
+	file, header, err := c.Request.FormFile("image")
+	if err != nil {
+		sendError(c, http.StatusBadRequest, err, "image")
+	}
+	defer file.Close()
+
+	// get user id
+	userUuid, err := getUserId(c)
+	if err != nil {
+		sendError(c, http.StatusUnauthorized, err, "Could not determine user")
+		return
+	}
+
+	// maintain one profile picture per user at any given time in S3 bucket
+	user, err := queries.GetUser(c, db.GetUserParams{
+		ID: &userUuid,
+	})
+
+	if user.ProfilePic.Valid == true {
+		err = deleteS3(user.ProfilePic.String)
+		if err != nil {
+			log.Println("Could not delete image from S3 bucket", err)
+			return
+		}
+	}
+
+	// create image key
+	imageKey := fmt.Sprintf(
+		"users/%s%s",
+		userUuid.String(),
+		path.Ext(header.Filename),
+	)
+
+	// update image key in db
+	err = queries.UpdateUser(c, db.UpdateUserParams{
+		ID:         userUuid,
+		ProfilePic: pgtype.Text{String: imageKey, Valid: true},
+	})
+
+	if err != nil {
+		log.Println("Could not save profile picture to db", err)
+		return
+	}
+
+	// upload image to s3
+	err = uploadS3(imageKey, header.Header.Get("Content-Type"), file)
+	if err != nil {
+		sendError(c, http.StatusInternalServerError, err, "Failed to upload image")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"imageKey": imageKey})
+}
+
 func handleMe(c *gin.Context) {
 	userUuid, err := getUserId(c)
 
 	if err != nil {
 		log.Println("Unable to get user UUID: \n", err)
+		return
 	}
 
 	log.Printf("Getting user %s\n", userUuid)
@@ -133,4 +193,5 @@ func handleUpdateMe(c *gin.Context) {
 func registerUserRoutes(router *gin.RouterGroup) {
 	router.GET("me", handleMe)
 	router.POST("updateMe", handleUpdateMe)
+	router.POST("uploadImage", uploadUserImage)
 }

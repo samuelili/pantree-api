@@ -151,26 +151,33 @@ func (q *Queries) CreateRecipeIngredient(ctx context.Context, arg CreateRecipeIn
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO
-  Users (email, name, date_joined, pref_measure)
+  Users (email, name, date_joined, pref_measure, profile_pic)
 VALUES
   (
     $1,
     $2,
     CURRENT_DATE,
-    $3
+    $3,
+    $4
   )
 RETURNING
-  id, email, name, date_joined, pref_measure, last_modified
+  id, email, name, date_joined, pref_measure, last_modified, profile_pic
 `
 
 type CreateUserParams struct {
 	Email       string      `json:"email"`
 	Name        string      `json:"name"`
 	PrefMeasure MeasureType `json:"prefMeasure"`
+	ProfilePic  pgtype.Text `json:"profilePic"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, createUser, arg.Email, arg.Name, arg.PrefMeasure)
+	row := q.db.QueryRow(ctx, createUser,
+		arg.Email,
+		arg.Name,
+		arg.PrefMeasure,
+		arg.ProfilePic,
+	)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -179,6 +186,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.DateJoined,
 		&i.PrefMeasure,
 		&i.LastModified,
+		&i.ProfilePic,
 	)
 	return i, err
 }
@@ -351,7 +359,7 @@ func (q *Queries) GetRecipeIngredients(ctx context.Context, recipeID uuid.UUID) 
 
 const getUser = `-- name: GetUser :one
 SELECT
-  id, email, name, date_joined, pref_measure, last_modified
+  id, email, name, date_joined, pref_measure, last_modified, profile_pic
 FROM
   Users u
 WHERE
@@ -381,6 +389,7 @@ func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (User, error) 
 		&i.DateJoined,
 		&i.PrefMeasure,
 		&i.LastModified,
+		&i.ProfilePic,
 	)
 	return i, err
 }
@@ -496,13 +505,13 @@ type GetUserPantryParams struct {
 }
 
 type GetUserPantryRow struct {
-	UserMeasurementSystem MeasureType `json:"userMeasurementSystem"`
-	IngredientName        string      `json:"ingredientName"`
-	Quantity              int64       `json:"quantity"`
-	ExpirationDate        interface{} `json:"expirationDate"`
-	Unit                  UnitType    `json:"unit"`
-	StorageLoc            LocType     `json:"storageLoc"`
-	IngredientType        GrocType    `json:"ingredientType"`
+	UserMeasurementSystem MeasureType     `json:"userMeasurementSystem"`
+	IngredientName        string          `json:"ingredientName"`
+	Quantity              decimal.Decimal `json:"quantity"`
+	ExpirationDate        interface{}     `json:"expirationDate"`
+	Unit                  UnitType        `json:"unit"`
+	StorageLoc            LocType         `json:"storageLoc"`
+	IngredientType        GrocType        `json:"ingredientType"`
 }
 
 // select by either id or email
@@ -646,11 +655,12 @@ SET
   pref_measure = COALESCE(
     $4::measure_type,
     pref_measure
-  )
+  ),
+  profile_pic = COALESCE($5, profile_pic)
 WHERE
-  id = $5
+  id = $6
 RETURNING
-  id, email, name, date_joined, pref_measure, last_modified
+  id, email, name, date_joined, pref_measure, last_modified, profile_pic
 `
 
 type UpdateUserParams struct {
@@ -658,6 +668,7 @@ type UpdateUserParams struct {
 	Name        pgtype.Text     `json:"name"`
 	DateJoined  pgtype.Date     `json:"dateJoined"`
 	PrefMeasure NullMeasureType `json:"prefMeasure"`
+	ProfilePic  pgtype.Text     `json:"profilePic"`
 	ID          uuid.UUID       `json:"id"`
 }
 
@@ -667,6 +678,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
 		arg.Name,
 		arg.DateJoined,
 		arg.PrefMeasure,
+		arg.ProfilePic,
 		arg.ID,
 	)
 	return err

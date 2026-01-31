@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-
 	"net/http"
 
 	"github.com/google/uuid"
@@ -52,7 +51,6 @@ type RecipeIngredient struct {
 
 func createRecipe(c *gin.Context) {
 	var request RecipeRequest
-	var err error
 
 	if err := c.ShouldBindBodyWith(&request, binding.JSON); err != nil {
 		sendError(c, http.StatusBadRequest, err, "Invalid request body")

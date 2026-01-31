@@ -97,13 +97,14 @@ WHERE
 
 -- name: CreateUser :one
 INSERT INTO
-  Users (email, name, date_joined, pref_measure)
+  Users (email, name, date_joined, pref_measure, profile_pic)
 VALUES
   (
     sqlc.arg ('email'),
     sqlc.arg ('name'),
     CURRENT_DATE,
-    sqlc.arg ('pref_measure')
+    sqlc.arg ('pref_measure'),
+    sqlc.arg('profile_pic')
   )
 RETURNING
   *;
@@ -117,7 +118,8 @@ SET
   pref_measure = COALESCE(
     sqlc.narg ('pref_measure')::measure_type,
     pref_measure
-  )
+  ),
+  profile_pic = COALESCE(sqlc.narg ('profile_pic'), profile_pic)
 WHERE
   id = sqlc.arg ('id')
 RETURNING

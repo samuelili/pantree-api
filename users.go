@@ -7,10 +7,13 @@ import (
 	"net/http"
 	"pantree/api/db"
 	"path"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+// to do: retrieve image object using handleMe
 
 func createOrGetNewUser(ctx context.Context, email string) (*db.User, error) {
 	user, err := queries.GetUser(ctx, db.GetUserParams{
@@ -88,7 +91,7 @@ func uploadUserImage(c *gin.Context) {
 	}
 
 	// upload image to s3
-	err = uploadS3(imageKey, header.Header.Get("Content-Type"), file)
+	err = uploadImageS3(imageKey, file)
 	if err != nil {
 		sendError(c, http.StatusInternalServerError, err, "Failed to upload image")
 		return
@@ -118,7 +121,32 @@ func handleMe(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, user)
+	log.Printf("Getting user %s's profile picture\n", userUuid)
+
+	var imageURL string
+
+	if user.ProfilePic.Valid != false {
+
+		imageURL, err = getS3PresignedURL(user.ProfilePic.String, 15*time.Minute)
+
+		if err != nil {
+			log.Println("Failed to retrieve object", err)
+			return
+		}
+
+		type userJSON struct {
+			user  db.User
+			image string
+		}
+
+		c.JSON(200, userJSON{user, imageURL})
+
+	} else {
+
+		log.Printf("User %s has no profile picture\n", userUuid)
+		c.JSON(200, user)
+	}
+
 }
 
 type UpdateUserRequest struct {
